@@ -220,13 +220,10 @@ public:
 
     // default initialization
     Network(){
-        cout << "Network: empty initialization" << endl;
     }
 
     // file initialization
     Network(string filename){
-        cout << "Network: file inizialization" << endl;
-
         streampos co = 0; // cumulative offset
 
         ifstream file(filename, ios::in|ios::binary);
@@ -275,8 +272,6 @@ public:
     // random network generation
     // node_layers: nodes per layers
     Network(vector<int> node_layers, default_random_engine& rng){
-        cout << "Network: random initialization" << endl;
-
         // create the layers
         for(size_t ilayer = 1; ilayer < node_layers.size(); ++ilayer){
             vector<Node> nv;
@@ -379,7 +374,7 @@ class GeneticAlgorithm{
 public:
     GeneticAlgorithm(vector<int> n_layers, string folder_name){
         pop_len = 20;
-        retain_n = 10;
+        retain_n = 5;
         retain_chance = 0.1;
         mut_chance = 0.5;
         cross_chance = 0.5;
@@ -476,15 +471,19 @@ public:
             }
 
             // mutate the population
-            int mut_count = 0;
-            for(auto pnn: next_gen){
-                if(rand_num(rng) < mut_chance){
-                    mutate(pnn);
-                    mut_count += 1;
-                }
-            }
-            cout << "mutated " << mut_count << " individuals" << endl;
+//            int mut_count = 0;
+//            for(auto pnn: next_gen){
+//                if(rand_num(rng) < mut_chance){
+//                    mutate(pnn);
+//                    mut_count += 1;
+//                }
+//            }
+//            cout << "mutated " << mut_count << " individuals" << endl;
 
+
+            for(size_t i = 0; i < retain_n; ++i){
+                next_gen.push_back(mutate(next_gen[i]));
+            }
             // cross population
 
             // calculate number of children to come up to the pop length
@@ -606,12 +605,14 @@ public:
 
 
 
-    void mutate(pair<double, Network>& pnn){
+    pair<double, Network> mutate(pair<double, Network> pnn){
+
+        pair<double, Network> res_nn;
         // reset score
-        pnn.first = -1;
+        res_nn.first = -1;
 
         // proceed with the mutation
-        Network& nn = pnn.second;
+        Network nn = pnn.second;
 
         // pick a random layer
         uniform_int_distribution<size_t> rand_layer(0, nn.layers.size() - 1);
@@ -636,6 +637,8 @@ public:
         for(size_t iw = 0; iw < nweights; ++iw){
             n.w[iw] = rand_n(rng);
         }
+        res_nn.second = nn;
+        return res_nn;
 
     }
 
@@ -684,10 +687,6 @@ string vec2str(vector<T> v){
     for(auto i : v){ ss << i << ", ";}
     ss << ")";
     return ss.str();
-}
-
-void mutate(vector<double>& v){
-    v[0] = 5;
 }
 
 int main()
@@ -771,7 +770,7 @@ int main()
 
 /*Genetic algorithm byte converter test*/
 
-    int input_n = 8;
+    int input_n = 4;
     int output_n = 4;
 
     vector<int> n_layers = {input_n, 32, 16, 8, output_n};
@@ -840,7 +839,7 @@ int main()
         cout << vec2str<double>(outputs[i]) << endl;
     }
 
-    //ga.run(inputs, outputs);
+    ga.run(inputs, outputs);
 
 //    random_device rd;
 //    default_random_engine rng(rd());
@@ -876,15 +875,5 @@ int main()
 //    }
 //    cout << "score: " << d << endl;
 
-    cout << "Mutate test" << endl;
-    vector<double> v = {1.1, 1.2, 1.3, 1.4};
-
-    cout << vec2str<double>(v) << endl;
-
-    mutate(v);
-
-    cout << vec2str<double>(v) << endl;
-
-    cout << "Hello world!" << endl;
     return 0;
 }
