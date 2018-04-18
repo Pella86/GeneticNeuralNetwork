@@ -1,9 +1,14 @@
 # depslib dependency file v1.0
-1522444162 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\main.cpp
+1523997959 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\main.cpp
 	<iostream>
 	<fstream>
 	<vector>
 	<string>
 	<cmath>
 	<sstream>
+	<random>
+	<limits>
+	<cassert>
+	<map>
+	<algorithm>
 

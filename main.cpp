@@ -7,7 +7,6 @@
 #include <random>
 #include <limits>
 #include <cassert>
-#include <ctime>
 #include <map>
 #include <algorithm>
 
@@ -16,7 +15,11 @@ using namespace std;
 typedef vector<vector<double>> io_nn_type;
 
 
-
+/* Sigmoid function
+*   converts the input in a 0 to 1 result
+*   the separation between negative z is to avoid exp will have too large numbers
+*   todo: insert a math exception to handle overflows
+*/
 double sigmoid(double z){
     if(z < 0){
         double s = 1 - 1 / ( 1 + exp(z));
@@ -28,6 +31,9 @@ double sigmoid(double z){
     }
 }
 
+/*Dot product fuction
+*   between two double vectors
+*/
 double dot(vector<double> l1, vector<double> l2){
     double d = 0;
 
@@ -37,36 +43,66 @@ double dot(vector<double> l1, vector<double> l2){
     return d;
 }
 
+/*Class Node
+*   The class manages the node
+    can be initialized by giving the weights and bias
+    default initialization
+    random initialization
+    or read directly from a file
+
+*/
 class Node{
 public:
+    // externally define weights and bisaes
     Node(std::vector<double> inw, double inb){
         w = inw;
         b = inb;
     }
 
+    // default initialization
     Node(){
         cout << "Node: empty initialization" << endl;
     }
 
+    // read the node from a binary file
+    // to_do: file guards
     Node(string filename){
         from_file(filename);
     }
 
+    // randomly initialize the node
+    // it initializes with n_weights
+    // needs a random number generator
+    // by default is a normal distribution with mean mu = 0.0 and sigma = 1.0
+    Node(size_t n_weights, default_random_engine& rng, double mu = 0.0, double sigma = 1.0){
+        normal_distribution<double> rand_n(mu, sigma);
+
+        b = rand_n(rng);
+
+        for(size_t iweight = 0; iweight < n_weights; ++iweight){
+            double weight = rand_n(rng);
+            w.push_back(weight);
+        }
+    }
+
+    // calculates the z parameter
     double z(vector<double> input){
         return dot(input, w) + b;
     }
 
+    // transform the z parameter in a 0..1 output
     double output(vector<double> input){
         return sigmoid(z(input));
     }
 
+    // string representation of the node
+    // w: (3) |(0.1, 0.2, 0.3) |b: 0.4
     string to_string(){
         stringstream ss;
 
-        ss << "|w: (" << w.size() << "| ";
+        ss << "w: (" << w.size() << ") |(";
 
         uint32_t i = 0;
-
         for(; i < w.size() - 1; ++i){
             ss << w[i] << ", ";
         }
@@ -77,33 +113,43 @@ public:
         return ss.str();
     }
 
+    // read the node from a file given a file name
     void from_file(string filename){
         ifstream file(filename, ios::in|ios::binary);
         if(file.is_open()){
             streampos co = 0;
+            // the core of the reading is delegated to this member function
             read_byte_chunk(file, co);
-
-
+            file.close();
         }
-        file.close();
     }
 
+    // read the chunk corresponding to a node from a file
     void read_byte_chunk(ifstream& file, streampos& co){
+        w.clear();
+
+        // co is the cumulative offset, the cumulative offset will be moved
+        // at the end of the byte chunk that correspond to the node read
         streampos init_co = co;
 
+        // set cumulative offset to the beginning of the node chunk
         file.seekg(co);
+
+        // read the bias
         file.read(reinterpret_cast<char*>(&b), sizeof(double));
         cout << "Node: read b: " << b << endl;
 
         co += sizeof(double);
         file.seekg(co);
 
+        // read how many weights
         int n_weights = 0;
         file.read(reinterpret_cast<char*>(&n_weights), sizeof(int));
         cout << "Node: read n of weights:" << n_weights << endl;
 
         co += sizeof(int);
 
+        // read as many doubles from the file as there are nodes
         for(int i = 0; i < n_weights; ++i){
             file.seekg(co);
 
@@ -116,55 +162,62 @@ public:
         cout << "total bytes read: " << co - init_co << endl;
     }
 
+    // saves the file in a binary format
     void save_bin(string filename){
         ofstream file(filename, ios::out|ios::binary);
         if(file.is_open()){
             streampos co = 0;
             write_byte_chunk(file, co);
             file.close();
-
         }
-
     }
 
+    // function that writes in the file the byte version of this node
     void write_byte_chunk(ofstream& file, streampos& co){
         streampos init_co = co;
 
+        //set the cumulative offset to were to start writing
         file.seekp(co);
 
+        // write the bias
         file.write(reinterpret_cast<char*>(&b),sizeof(b));
         co += sizeof(b);
+        cout << "Node: written bias " << endl;
 
+        // write the number of nodes
         int n_weights = (int)w.size();
         file.write(reinterpret_cast<char*>(&n_weights), sizeof(n_weights));
         co += sizeof(n_weights);
 
-        cout << "number of weights to write:" << n_weights << endl;
+        // writes the weights
         int i = 0;
         for(; i < n_weights; ++i){
             file.seekp(co);
             file.write(reinterpret_cast<char*>(&w[i]), sizeof(w[i]));
             co += sizeof(w[i]);
-
-            cout << "co: " << co << endl;
         }
-
-        cout << "total bytes written: " << co - init_co << endl;
-
+        cout << "Node: number of weights written: " << n_weights << endl;
+        cout << "Node: total bytes written: " << co - init_co << endl;
     }
 
+    // members
     std::vector<double> w;
     double b;
 
 };
 
+/*Class Network
+    is a neural network
+*/
 class Network{
 public:
 
+    // default initialization
     Network(){
         cout << "Network: empty initialization" << endl;
     }
 
+    // file initialization
     Network(string filename){
         cout << "Network: file inizialization" << endl;
 
@@ -175,12 +228,12 @@ public:
             // read the first int -> lengths of layers
             int n_layers;
             file.read(reinterpret_cast<char*>(&n_layers), sizeof(int));
-
             cout << "Network: has n layers: " << n_layers << endl;
-
             co += sizeof(int);
 
-            // read how many nodes per layers are there
+            // read how many nodes per layers are there and stores them in
+            // nodes layer
+            cout << "Each layer has n nodes" << endl;
             vector<int> nodes_layer;
             for(int i = 0; i < n_layers; ++i){
                 file.seekg(co);
@@ -195,8 +248,10 @@ public:
             // for each layer
             for(int i = 0; i < n_layers; i += 1){
 
+                // create a placeholder for the node vector
                 vector<Node> nv;
                 layers.push_back(nv);
+
                 // for each node
                 for(int inode = 0; inode < nodes_layer[i]; ++inode){
                     Node n;
@@ -211,47 +266,33 @@ public:
         file.close();
     }
 
+    // random network generation
+    // node_layers: nodes per layers
     Network(vector<int> node_layers, default_random_engine& rng){
+        cout << "Network: random initialization" << endl;
 
-        cout << "Network: vector initialization" << endl;
-
-
-
-        normal_distribution<double> distribution(0.0, 1.0);
-
-
-
-
+        // create the layers
         for(size_t ilayer = 1; ilayer < node_layers.size(); ++ilayer){
             vector<Node> nv;
             layers.push_back(nv);
 
+            // append each layers n nodes
             int n_nodes = node_layers[ilayer];
-
             for(int inode = 0; inode < n_nodes; ++inode){
-
-                double b = distribution(rng);
-                vector<double> weights;
-
-                for(int iweight = 0; iweight < node_layers[ilayer - 1]; ++iweight){
-                    double w = distribution(rng);
-                    weights.push_back(w);
-                }
-
-                Node n = Node(weights, b);
+                int n_nodes = node_layers[ilayer - 1];
+                Node n(n_nodes, rng);
                 layers[ilayer - 1].push_back(n);
             }
         }
-
     }
 
+    // string representation
     string to_string(){
         stringstream ss;
 
-        ss << "- Network -" << endl;
-
+        ss << "--- Network ---" << endl;
         ss << "n layers:" << layers.size() << endl;
-        ss << "nodes per layer" << endl;
+        ss << "nodes per layer: ";
         for(auto i : layers) ss << i.size() << " ";
         ss << endl;
 
@@ -261,63 +302,68 @@ public:
                 ss << n.to_string() << endl;
             }
         }
-
         return ss.str();
     }
 
-
+    // write the network to a file
     void save_to_file(string filename){
         ofstream file(filename, ios::out | ios::binary);
         if(file.is_open()){
-            streampos co = 0;
+            streampos co = 0; // cumulative offset set to the beginning of file
+
+            // write number of layers
             int n_layers = layers.size();
-            cout << "n_layers:" << n_layers << endl;
+            cout << "written number layers:" << n_layers << endl;
             file.write(reinterpret_cast<char*> (&n_layers), sizeof(n_layers));
             co += sizeof(n_layers);
 
-            for(vector<Node> i : layers) {
-                int n_nodes = i.size();
-
-                cout << n_nodes << endl;
-
+            // write layers per node
+            cout << "writing layer per node..." << endl;
+            for(vector<Node> layer : layers) {
+                int n_nodes = layer.size();
                 file.seekp(co);
                 file.write(reinterpret_cast<char*> (&n_nodes), sizeof(n_nodes));
                 co += sizeof(n_nodes);
-
             }
 
+            //write the nodes
+            int node_counter = 0;
             for(auto l : layers){
                 for(auto n : l){
-                    cout << "Writing node" << endl;
-                    cout << n.to_string() << endl;
                     n.write_byte_chunk(file, co);
+                    ++node_counter;
                 }
             }
-
+            cout << "written " << node_counter << " nodes" << endl;
             cout << "total bytes written: " << co <<endl;
-
         }
         file.close();
     }
 
+    // calculate the output of the network
     vector<double> calculate(vector<double> input){
-
-
+        //the input is copied in a dynamic input array that will be reused in
+        //the calculation cycle
         vector<double> dyn_output;
         vector<double> dyn_input = input;
         for (auto l : layers){
+            // reset the output vector
             dyn_output.clear();
+
+            // populate output vector with results from layers
             for(auto n : l){
                 dyn_output.push_back(n.output(dyn_input));
             }
+
+            // copy the dynamic input so that it can be used again
             dyn_input.clear();
             dyn_input = dyn_output;
         }
 
         return dyn_output;
-
     }
 
+    // member
     vector<vector<Node>> layers;
 };
 
@@ -332,11 +378,13 @@ public:
         mut_chance = 0.5;
         cross_chance = 0.5;
         network_layers = n_layers;
-        rounds = 1000;
+        rounds = 10000;
     }
 
     void run(io_nn_type inputs, io_nn_type exp_outputs){
         cout << "Running genetic algorithm..." << endl;
+
+        double first_best;
 
 
         cout << "Input/expected output pairs for nn test" << endl;
@@ -385,6 +433,8 @@ public:
             }
         } CustomScoreSorting;
         sort(scored_pop.begin(), scored_pop.end(), CustomScoreSorting);
+
+        first_best = scored_pop.begin()->first;
 
         // run the simulation
         cout << "Running the generations..." << endl;
@@ -474,6 +524,8 @@ public:
 
             scored_pop.clear();
             scored_pop = next_gen;
+            cout << "Algorithm performance, first best " << first_best << endl;
+            cout << "First: " << next_gen.begin()->first << " Last: " << next_gen.back().first << endl;
 
         }
 
@@ -592,40 +644,35 @@ private:
     default_random_engine rng{rd()};
 };
 
+template<class T>
+string vec2str(vector<T> v){
+    stringstream ss;
+    ss << "(";
+    for(auto i : v){ ss << i << ", ";}
+    ss << ")";
+    return ss.str();
+}
 
 int main()
 {
-//    float memblock;
-//
-//    ifstream file("C:/Users/Mauro/Desktop/Vita Online/Programming/Neural Networks/test_bin_file_2", ios::in|ios::binary);
-//
-//    if(file.is_open()){
-//        cout << "file open" << endl;
-//        for(unsigned int i = 0; i < 10; ++i){
-//            file.read(reinterpret_cast<char*>(&memblock), sizeof(float));
-//            cout << memblock << endl;
-//            cout << i*sizeof(float) << endl;
-//            streampos size = i*sizeof(float);
-//            file.seekg(size);
-//
-//        }
-//
-//
-//        file.close();
-//    }
+/*Node testing functions*/
 
 //    Node n = Node("C:/Users/Mauro/Desktop/Vita Online/Programming/Neural Networks/my_node");
 //
-//    cout << "bias" << endl;
-//    cout << n.b << endl;
-//
-//    cout << "weights" << endl;
-//    for(size_t i = 0; i < n.w.size(); ++i){
-//
-//        cout << n.w[i] << endl;
-//    }
+//    cout << n.to_string() << endl;
 //
 //    n.save_bin("C:/Users/Mauro/Desktop/Vita Online/Programming/Neural Networks/my_c_node");
+//
+//    cout << "Random node" << endl;
+//
+//    random_device rd;
+//    default_random_engine rng(rd());
+//
+//    Node random_node = Node(10, rng);
+//    cout << random_node.to_string() << endl;
+//    random_node.save_bin("C:/Users/Mauro/Desktop/Vita Online/Programming/Neural Networks/my_c_node");
+
+/*Network testing functions*/
 
 //    Network nn = Network("C:/Users/Mauro/Desktop/Vita Online/Programming/Neural Networks/nn_test");
 //
@@ -643,40 +690,93 @@ int main()
 //            cout << d << endl;
 //    }
 //
+//    random_device rd;
+//    default_random_engine rng(rd());
+//
 //    vector<int> nodes_per_layer({2, 3, 3, 1});
-//    Network rand_net(nodes_per_layer);
+//    Network rand_net(nodes_per_layer, rng);
 //
 //    cout << rand_net.to_string() << endl;
+//
+//    output = rand_net.calculate({1,2});
+//    cout << "output" << endl;
+//    for(auto d : output) {
+//            cout << d << endl;
+//    }
 
+/*Genetic algorithm tests*/
 
+//    vector<int> n_layers = {4, 50, 50, 50, 50, 1};
+//    GeneticAlgorithm ga(n_layers);
+//
+//    io_nn_type inputs;
+//    io_nn_type outputs;
+//    int number_of_inputs = 4;
+//    for(int i = 0; i < number_of_inputs; ++i){
+//        vector<double> res;
+//        for(int j = 0; j < 4; ++j){
+//            if(j  == i % 4){
+//                res.push_back(1.0);
+//            }
+//            else{
+//                res.push_back(0.0);
+//            }
+//        }
+//        inputs.push_back(res);
+//        vector<double> output;
+//        double perc = i % 4;
+//        output.push_back( perc / 4);
+//        outputs.push_back(output);
+//        res.clear();
+//    }
+//
+//    ga.run(inputs, outputs);
 
-    vector<int> n_layers = {4, 50, 50, 1};
+/*Genetic algorithm byte converter test*/
+
+    vector<int> n_layers = {1, 500, 200, 100, 20, 4};
     GeneticAlgorithm ga(n_layers);
 
     io_nn_type inputs;
     io_nn_type outputs;
-    int number_of_inputs = 4;
-    for(int i = 0; i < number_of_inputs; ++i){
+    int n_io_pairs = 16;
+    int n_output_nodes = 4;
+    for(int i = 0; i < n_io_pairs; ++i){
         vector<double> res;
-        for(int j = 0; j < 4; ++j){
-            if(j  == i % 4){
-                res.push_back(1.0);
+         // put the number as input
+        res.push_back(i);
+        inputs.push_back(res);
+
+        vector<double> output;
+        int mask = 0b00000001;
+        for(int j = 0; j < n_output_nodes; ++j){
+            if( (mask & i) != 0){
+                output.push_back(1);
             }
             else{
-                res.push_back(0.0);
+                output.push_back(0);
             }
+            cout << vec2str<double>(output) << endl;
+            mask <<= 1;
+            cout << "mask" <<  mask << endl;
         }
-        inputs.push_back(res);
-        vector<double> output;
-        double perc = i % 4;
-        output.push_back( perc / 4);
+
+        reverse(output.begin(), output.end());
+
+
+
         outputs.push_back(output);
         res.clear();
     }
 
+    cout << "Final vectors" << endl;
+
+    for(size_t i = 0; i < inputs.size(); ++i){
+        cout << vec2str<double>(inputs[i]) << endl;
+        cout << vec2str<double>(outputs[i]) << endl;
+    }
+
     ga.run(inputs, outputs);
-
-
 
 
 
