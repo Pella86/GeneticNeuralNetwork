@@ -606,7 +606,7 @@ public:
 
 
 
-    void mutate(pair<double, Network> pnn){
+    void mutate(pair<double, Network>& pnn){
         // reset score
         pnn.first = -1;
 
