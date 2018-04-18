@@ -14,6 +14,12 @@ using namespace std;
 
 typedef vector<vector<double>> io_nn_type;
 
+template<class T>
+string to_string(T value){
+    stringstream ss;
+    ss << value;
+    return ss.str();
+}
 
 /* Sigmoid function
 *   converts the input in a 0 to 1 result
@@ -130,14 +136,14 @@ public:
 
         // co is the cumulative offset, the cumulative offset will be moved
         // at the end of the byte chunk that correspond to the node read
-        streampos init_co = co;
+        //streampos init_co = co;
 
         // set cumulative offset to the beginning of the node chunk
         file.seekg(co);
 
         // read the bias
         file.read(reinterpret_cast<char*>(&b), sizeof(double));
-        cout << "Node: read b: " << b << endl;
+        //cout << "Node: read b: " << b << endl;
 
         co += sizeof(double);
         file.seekg(co);
@@ -145,7 +151,7 @@ public:
         // read how many weights
         int n_weights = 0;
         file.read(reinterpret_cast<char*>(&n_weights), sizeof(int));
-        cout << "Node: read n of weights:" << n_weights << endl;
+        //cout << "Node: read n of weights:" << n_weights << endl;
 
         co += sizeof(int);
 
@@ -159,7 +165,7 @@ public:
             co += sizeof(double);
         }
 
-        cout << "total bytes read: " << co - init_co << endl;
+        //cout << "total bytes read: " << co - init_co << endl;
     }
 
     // saves the file in a binary format
@@ -174,7 +180,7 @@ public:
 
     // function that writes in the file the byte version of this node
     void write_byte_chunk(ofstream& file, streampos& co){
-        streampos init_co = co;
+        //streampos init_co = co;
 
         //set the cumulative offset to were to start writing
         file.seekp(co);
@@ -182,7 +188,7 @@ public:
         // write the bias
         file.write(reinterpret_cast<char*>(&b),sizeof(b));
         co += sizeof(b);
-        cout << "Node: written bias " << endl;
+        //cout << "Node: written bias " << endl;
 
         // write the number of nodes
         int n_weights = (int)w.size();
@@ -196,8 +202,8 @@ public:
             file.write(reinterpret_cast<char*>(&w[i]), sizeof(w[i]));
             co += sizeof(w[i]);
         }
-        cout << "Node: number of weights written: " << n_weights << endl;
-        cout << "Node: total bytes written: " << co - init_co << endl;
+        //cout << "Node: number of weights written: " << n_weights << endl;
+        //cout << "Node: total bytes written: " << co - init_co << endl;
     }
 
     // members
@@ -280,7 +286,7 @@ public:
             int n_nodes = node_layers[ilayer];
             for(int inode = 0; inode < n_nodes; ++inode){
                 int n_nodes = node_layers[ilayer - 1];
-                Node n(n_nodes, rng);
+                Node n(n_nodes, rng, 0, 4);
                 layers[ilayer - 1].push_back(n);
             }
         }
@@ -371,14 +377,15 @@ public:
 
 class GeneticAlgorithm{
 public:
-    GeneticAlgorithm(vector<int> n_layers){
+    GeneticAlgorithm(vector<int> n_layers, string folder_name){
         pop_len = 20;
         retain_n = 10;
         retain_chance = 0.1;
         mut_chance = 0.5;
         cross_chance = 0.5;
         network_layers = n_layers;
-        rounds = 10000;
+        rounds = 1000;
+        output_folder = folder_name;
     }
 
     void run(io_nn_type inputs, io_nn_type exp_outputs){
@@ -436,6 +443,15 @@ public:
 
         first_best = scored_pop.begin()->first;
 
+        cout << "Saving networks..." << endl;
+
+        int name_counter = 0;
+        for(auto pnn : scored_pop){
+            string nn_name = output_folder + "/init_nn_" + to_string(name_counter);
+            pnn.second.save_to_file(nn_name);
+            ++name_counter;
+        }
+
         // run the simulation
         cout << "Running the generations..." << endl;
 
@@ -461,7 +477,7 @@ public:
 
             // mutate the population
             int mut_count = 0;
-            for(auto pnn : next_gen){
+            for(auto pnn: next_gen){
                 if(rand_num(rng) < mut_chance){
                     mutate(pnn);
                     mut_count += 1;
@@ -535,6 +551,17 @@ public:
             result_pop.push_back(pnn.second);
         }
 
+        cout << "Saving resulting networks" << endl;
+        name_counter = 0;
+        for(auto nn : result_pop){
+            string nn_name = output_folder + "/final_nn_" + to_string(name_counter);
+            nn.save_to_file(nn_name);
+            ++name_counter;
+        }
+
+        cout << "score: " << score(init_pop[0], inputs, exp_outputs) << endl;
+        cout << "score: " << score(result_pop[0], inputs, exp_outputs) << endl;
+
         for(size_t i = 0; i < inputs.size(); ++i){
             cout << "---- input: ------" << endl;
             for(auto j : inputs[i]) cout << j << " ";
@@ -545,10 +572,12 @@ public:
             cout << endl;
 
             vector<double> output;
+
+
             for(size_t j = 0; j < 1/*scored_pop.size()*/; ++j){
                 output = init_pop[j].calculate(inputs[i]);
                 cout << "init pop" << endl;
-                cout << "score: " << score(init_pop[j], inputs, exp_outputs) << endl;
+
                 cout << "output: ";
                 for(auto o : output){
                     cout << o << " ";
@@ -560,7 +589,7 @@ public:
 
                 output = result_pop[j].calculate(inputs[i]);
                 cout << "refined pop" << endl;
-                cout << "score: " << score(result_pop[j], inputs, exp_outputs) << endl;
+
                 cout << "output: ";
                 for(auto o : output) {
                     cout << o << " ";
@@ -575,7 +604,9 @@ public:
 
     }
 
-    void mutate(pair<double, Network>& pnn){
+
+
+    void mutate(pair<double, Network> pnn){
         // reset score
         pnn.first = -1;
 
@@ -620,9 +651,10 @@ public:
             // assign to a place holder the right expected result
             vector<double> exp_res = exp_results[i];
 
-            assert(network_output.size() == exp_res.size());
+
 
             // calculate the differences
+            assert(network_output.size() == exp_res.size());
             for(size_t j = 0; j < network_output.size(); ++j){
                 d += pow(exp_res[j] - network_output[j], 2);
             }
@@ -638,6 +670,7 @@ public:
     double cross_chance;
     vector<Network> init_pop;
     vector<int> network_layers;
+    string output_folder;
 
 private:
     random_device rd{};
@@ -651,6 +684,10 @@ string vec2str(vector<T> v){
     for(auto i : v){ ss << i << ", ";}
     ss << ")";
     return ss.str();
+}
+
+void mutate(vector<double>& v){
+    v[0] = 5;
 }
 
 int main()
@@ -734,39 +771,66 @@ int main()
 
 /*Genetic algorithm byte converter test*/
 
-    vector<int> n_layers = {1, 500, 200, 100, 20, 4};
-    GeneticAlgorithm ga(n_layers);
+    int input_n = 8;
+    int output_n = 4;
+
+    vector<int> n_layers = {input_n, 32, 16, 8, output_n};
+    string folder_name = "C:/Users/Mauro/Desktop/Vita Online/Programming/Neural Networks ref/data/ga_cpp_run";
+    GeneticAlgorithm ga(n_layers, folder_name);
 
     io_nn_type inputs;
     io_nn_type outputs;
-    int n_io_pairs = 16;
-    int n_output_nodes = 4;
+    int n_io_pairs = 8;
     for(int i = 0; i < n_io_pairs; ++i){
-        vector<double> res;
+        int mask = 0b00000001;
+        vector<double> input;
          // put the number as input
-        res.push_back(i);
-        inputs.push_back(res);
+        for(int j = 0; j < input_n; ++ j){
+            if( (i & mask) > 0){
+                input.push_back(1);
+            }
+            else{
+                input.push_back(0);
+            }
+            mask <<= 1;
+        }
+        inputs.push_back(input);
 
         vector<double> output;
-        int mask = 0b00000001;
-        for(int j = 0; j < n_output_nodes; ++j){
-            if( (mask & i) != 0){
+        mask = 0b00000001;
+
+        for(int j = 0; j < output_n; ++j){
+//            if( (mask & i) != 0){
+//                output.push_back(1);
+//            }
+//            else{
+//                output.push_back(0);
+//            }
+//            cout << vec2str<double>(output) << endl;
+//            mask <<= 1;
+//            cout << "mask" <<  mask << endl;
+//            if(j <= i){
+//                output.push_back(1);
+//            }
+//            else{
+//                output.push_back(0);
+//            }
+            if( (i & mask) > 0){
                 output.push_back(1);
             }
             else{
                 output.push_back(0);
             }
-            cout << vec2str<double>(output) << endl;
             mask <<= 1;
-            cout << "mask" <<  mask << endl;
         }
 
-        reverse(output.begin(), output.end());
+        //reverse(output.begin(), output.end());
 
 
 
         outputs.push_back(output);
-        res.clear();
+        input.clear();
+        output.clear();
     }
 
     cout << "Final vectors" << endl;
@@ -776,9 +840,50 @@ int main()
         cout << vec2str<double>(outputs[i]) << endl;
     }
 
-    ga.run(inputs, outputs);
+    //ga.run(inputs, outputs);
 
+//    random_device rd;
+//    default_random_engine rng(rd());
+//
+//    Network nn = Network({1, 3}, rng);
+//
+//
+//    double d = 0;
+//    for(size_t i = 0; i < inputs.size(); ++i){
+//        cout << "input: " << vec2str(inputs[i]) << endl;
+//        // calculate the output from the elements of inputs
+//        //vector<double> network_output = nn.calculate(inputs[i]);
+//
+//        vector<double> network_output;
+//
+//        int mask = 0b00000001;
+//        for(int j = 0; j < 4; ++j){
+//            if( (i & mask) > 0){
+//                network_output.push_back(1);
+//            }
+//            else{
+//                network_output.push_back(0);
+//            }
+//            mask <<= 1;
+//        }
+//        // assign to a place holder the right expected result
+//        vector<double> exp_res = outputs[i];
+//
+//        for(size_t j = 0; j < network_output.size(); ++j){
+//            cout << exp_res[j] << " "<< network_output[j] << " "  <<exp_res[j] - network_output[j] << endl;
+//            d += pow(exp_res[j] - network_output[j], 2);
+//        }
+//    }
+//    cout << "score: " << d << endl;
 
+    cout << "Mutate test" << endl;
+    vector<double> v = {1.1, 1.2, 1.3, 1.4};
+
+    cout << vec2str<double>(v) << endl;
+
+    mutate(v);
+
+    cout << vec2str<double>(v) << endl;
 
     cout << "Hello world!" << endl;
     return 0;
