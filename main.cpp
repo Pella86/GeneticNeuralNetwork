@@ -379,7 +379,7 @@ public:
         mut_chance = 0.5;
         cross_chance = 0.5;
         network_layers = n_layers;
-        rounds = 1000;
+        rounds = 100000;
         output_folder = folder_name;
     }
 
@@ -627,7 +627,7 @@ public:
         Node& n = nn.layers[layer_n][node_n];
 
         // create the normal distribution for the weights and biases
-        normal_distribution<double> rand_n(0.0, 1.0);
+        normal_distribution<double> rand_n(0.0, 2.5);
 
         // assign bias
         n.b = rand_n(rng);
@@ -770,50 +770,28 @@ int main()
 
 /*Genetic algorithm byte converter test*/
 
-    int input_n = 4;
-    int output_n = 4;
 
-    vector<int> n_layers = {input_n, 32, 16, 8, output_n};
-    string folder_name = "C:/Users/Mauro/Desktop/Vita Online/Programming/Neural Networks ref/data/ga_cpp_run";
-    GeneticAlgorithm ga(n_layers, folder_name);
+    int input_n = 1;
+    int output_n = 4;
 
     io_nn_type inputs;
     io_nn_type outputs;
     int n_io_pairs = 8;
     for(int i = 0; i < n_io_pairs; ++i){
-        int mask = 0b00000001;
+        /*input definition*/
         vector<double> input;
          // put the number as input
         for(int j = 0; j < input_n; ++ j){
-            if( (i & mask) > 0){
-                input.push_back(1);
-            }
-            else{
-                input.push_back(0);
-            }
-            mask <<= 1;
+            input.push_back(i);
         }
         inputs.push_back(input);
 
+
+        /*output definition*/
         vector<double> output;
-        mask = 0b00000001;
+        int mask = 0b00000001;
 
         for(int j = 0; j < output_n; ++j){
-//            if( (mask & i) != 0){
-//                output.push_back(1);
-//            }
-//            else{
-//                output.push_back(0);
-//            }
-//            cout << vec2str<double>(output) << endl;
-//            mask <<= 1;
-//            cout << "mask" <<  mask << endl;
-//            if(j <= i){
-//                output.push_back(1);
-//            }
-//            else{
-//                output.push_back(0);
-//            }
             if( (i & mask) > 0){
                 output.push_back(1);
             }
@@ -822,12 +800,12 @@ int main()
             }
             mask <<= 1;
         }
-
-        //reverse(output.begin(), output.end());
-
-
+        //reverse output so it follows a big endian layout
+        reverse(output.begin(), output.end());
 
         outputs.push_back(output);
+
+        // clear the input/output place holder (is anyhow copied in the corr vec
         input.clear();
         output.clear();
     }
@@ -838,6 +816,10 @@ int main()
         cout << vec2str<double>(inputs[i]) << endl;
         cout << vec2str<double>(outputs[i]) << endl;
     }
+
+    vector<int> n_layers = {input_n, 32, 16, 8, output_n};
+    string folder_name = "C:/Users/Mauro/Desktop/Vita Online/Programming/Neural Networks ref/data/ga_cpp_run";
+    GeneticAlgorithm ga(n_layers, folder_name);
 
     ga.run(inputs, outputs);
 
