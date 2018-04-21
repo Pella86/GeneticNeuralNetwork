@@ -18,6 +18,7 @@ class GeneticAlgorithm
     public:
 
         GeneticAlgorithm(std::vector<int> n_layers, std::string folder_name);
+        GeneticAlgorithm(std::string config_filename);
 
         virtual ~GeneticAlgorithm();
 

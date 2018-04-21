@@ -55,7 +55,7 @@ Network::Network(string filename){
     file.close();
 }
 
-Network::Network(vector<int> node_layers, default_random_engine& rng){
+Network::Network(vector<int> node_layers, default_random_engine& rng, double mu, double sigma){
     // create the layers
     for(size_t ilayer = 1; ilayer < node_layers.size(); ++ilayer){
         vector<Node> nv;
@@ -65,7 +65,7 @@ Network::Network(vector<int> node_layers, default_random_engine& rng){
         int n_nodes = node_layers[ilayer];
         for(int inode = 0; inode < n_nodes; ++inode){
             int n_nodes = node_layers[ilayer - 1];
-            Node n(n_nodes, rng, 0, 4);
+            Node n(n_nodes, rng, mu, sigma);
             layers[ilayer - 1].push_back(n);
         }
     }

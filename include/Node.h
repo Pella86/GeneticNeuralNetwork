@@ -7,7 +7,6 @@
 #include <fstream>
 #include <iostream>
 
-
 class Node
 {
     public:

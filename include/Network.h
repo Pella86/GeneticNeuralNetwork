@@ -18,7 +18,7 @@ class Network
         Network(std::string filename);
 
         // initialize network by layers ex: {2, 3, 4, 5}
-        Network(std::vector<int> node_layers, std::default_random_engine& rng);
+        Network(std::vector<int> node_layers, std::default_random_engine& rng, double mu = 0.0, double sigma = 1.0);
 
         virtual ~Network();
 

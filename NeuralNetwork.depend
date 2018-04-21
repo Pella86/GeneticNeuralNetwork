@@ -1,22 +1,23 @@
 # depslib dependency file v1.0
-1524254777 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\main.cpp
+1524256805 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\main.cpp
 	<iostream>
 	<vector>
 	<string>
 	<sstream>
 	"GeneticAlgorithm.h"
 
-1524254815 c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\include\node.h
+1524255202 c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\include\node.h
 	<vector>
 	<string>
 	<random>
 	<fstream>
 	<iostream>
 
-1524234382 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\src\node.cpp
+1524254814 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\src\node.cpp
 	"Node.h"
+	<cmath>
 
-1524243886 c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\include\network.h
+1524255715 c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\include\network.h
 	<string>
 	<vector>
 	<random>
@@ -25,14 +26,14 @@
 	<random>
 	"Node.h"
 
-1524239576 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\src\network.cpp
+1524255745 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\src\network.cpp
 	"Network.h"
 
-1524244840 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\src\geneticalgorithm.cpp
+1524260734 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\src\geneticalgorithm.cpp
 	"GeneticAlgorithm.h"
 	<sstream>
 
-1524244757 c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\include\geneticalgorithm.h
+1524256704 c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\include\geneticalgorithm.h
 	<vector>
 	<string>
 	<random>

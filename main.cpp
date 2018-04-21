@@ -21,97 +21,46 @@ string vec2str(vector<T> v){
 
 
 void test_node(){
-    // generate random node
-    Node node = Node();
+    cout << "Test node..." << endl;
 
+    // generate random node
+    random_device rd;
+    default_random_engine rng(rd());
+
+    // create a node with 10 weights and the
+    // normal distr param mu as 0 and std as 3
+    Node node(10, rng, 0, 3);
+
+    cout << node << endl;
+
+    // save the node
+    node.save_bin("./test_rnd_node.ndf");
+
+    // read the saved random node
+    Node read_node("./test_rnd_node.ndf");
+
+    cout << read_node << endl;
 }
 
 
-int main()
-{
-/*Node testing functions*/
+void test_network(){
+    cout << "Testing network..." << endl;
+    random_device rd;
+    default_random_engine rng(rd());
 
-//    cout << "loadain node from file" << endl;
-//
-//    Node n = Node("C:/Users/Mauro/Desktop/Vita Online/Programming/Neural Networks/my_node");
-//
-//    cout << n << endl;
-//
-//    cout << "saving node to file" << endl;
-//
-//    n.save_bin("C:/Users/Mauro/Desktop/Vita Online/Programming/Neural Networks/my_c_node");
-//
-//    cout << "Random node" << endl;
-//
-//    random_device rd;
-//    default_random_engine rng(rd());
-//
-//    Node random_node = Node(10, rng);
-//    cout << random_node << endl;
-//    random_node.save_bin("C:/Users/Mauro/Desktop/Vita Online/Programming/Neural Networks/my_c_node");
+    Network nn({2, 3, 4, 5}, rng, 0, 4);
 
-/*Network testing functions*/
+    cout << nn << endl;
 
-//    Network nn = Network("C:/Users/Mauro/Desktop/Vita Online/Programming/Neural Networks/nn_test");
-//
-//    cout << nn << endl;
-//
-//    nn.save_to_file("C:/Users/Mauro/Desktop/Vita Online/Programming/Neural Networks/nn_test_CPP_write");
-//
-//    Network nn_test = Network("C:/Users/Mauro/Desktop/Vita Online/Programming/Neural Networks/nn_test_CPP_write");
-//
-//    cout << nn_test << endl;
-//
-//    vector<double> output = nn_test.calculate({1,2});
-//    cout << "output" << endl;
-//    for(auto d : output) {
-//            cout << d << endl;
-//    }
-//
-//    random_device rd;
-//    default_random_engine rng(rd());
-//
-//    vector<int> nodes_per_layer({2, 3, 3, 1});
-//    Network rand_net(nodes_per_layer, rng);
-//
-//    cout << rand_net << endl;
-//
-//    output = rand_net.calculate({1,2});
-//    cout << "output" << endl;
-//    for(auto d : output) {
-//            cout << d << endl;
-//    }
+    nn.save_to_file("./test_net.nnf");
 
-/*Genetic algorithm tests*/
+    Network nn_read("./test_net.nnf");
 
-//    vector<int> n_layers = {4, 50, 50, 50, 50, 1};
-//    GeneticAlgorithm ga(n_layers);
-//
-//    io_nn_type inputs;
-//    io_nn_type outputs;
-//    int number_of_inputs = 4;
-//    for(int i = 0; i < number_of_inputs; ++i){
-//        vector<double> res;
-//        for(int j = 0; j < 4; ++j){
-//            if(j  == i % 4){
-//                res.push_back(1.0);
-//            }
-//            else{
-//                res.push_back(0.0);
-//            }
-//        }
-//        inputs.push_back(res);
-//        vector<double> output;
-//        double perc = i % 4;
-//        output.push_back( perc / 4);
-//        outputs.push_back(output);
-//        res.clear();
-//    }
-//
-//    ga.run(inputs, outputs);
+    cout << nn_read << endl;
 
-/*Genetic algorithm byte converter test*/
+}
 
+void test_genetic_algorithm(){
     int input_n = 1;
     int output_n = 4;
 
@@ -164,5 +113,25 @@ int main()
 
     ga.run(inputs, outputs);
 
+}
+
+
+int main()
+{
+    bool test = false;
+
+
+    GeneticAlgorithm ga("./data/GA_config.txt");
+
+    if(test){
+        /*Node testing functions*/
+        test_node();
+
+        /*Network testing functions*/
+        test_network();
+
+        /*Genetic algorithm tests*/
+        test_genetic_algorithm();
+    }
     return 0;
 }
