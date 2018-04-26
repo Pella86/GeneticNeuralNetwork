@@ -4,9 +4,9 @@
 #include <sstream>
 
 
-//#include "Node.h"
-//#include "Network.h"
 #include "GeneticAlgorithm.h"
+#include "TextParseHelper.h"
+#include "StringtoDouble.h"
 
 using namespace std;
 
@@ -112,16 +112,73 @@ void test_genetic_algorithm(){
     GeneticAlgorithm ga(n_layers, folder_name);
 
     ga.run(inputs, outputs);
-
 }
 
+
+vector<vector<double>> read_iofile_txt(string filename){
+    ifstream file(filename, ios::in);
+
+    vector<vector<double>> inputs;
+
+    string line;
+
+    if(file.is_open()){
+
+        while(getline(file, line)){
+
+            // skip empty lines and comments
+            if(line.size() > 1 && line[0] == '#'){
+                continue;
+            }
+
+            vector<double> input_line;
+
+            vector<string> chunks = str_split(line, ' ');
+
+            for(auto s : chunks){
+                if(s.size() > 0){
+                    input_line.push_back(stod(s));
+                }
+            }
+
+            if(input_line.size() > 0){
+                inputs.push_back(input_line);
+            }
+        }
+
+        file.close();
+    }
+
+    return inputs;
+}
 
 int main()
 {
     bool test = false;
 
 
+
+    cout << "test input read" << endl;
+
+    vector<vector<double>> inputs = read_iofile_txt("./data/GA_inputs.txt");
+
+    cout << "retrived inputs" << endl;
+    for(auto v : inputs){
+        cout << vec2str(v) << endl;
+    }
+
+    vector<vector<double>> outputs = read_iofile_txt("./data/GA_outputs.txt");
+
+    cout << "retrived outputs" << endl;
+    for(auto v : outputs){
+        cout << vec2str(v) << endl;
+    }
+
+    cout << "test genetic algorithm" << endl;
+
     GeneticAlgorithm ga("./data/GA_config.txt");
+
+    ga.run(inputs, outputs);
 
     if(test){
         /*Node testing functions*/
@@ -133,5 +190,6 @@ int main()
         /*Genetic algorithm tests*/
         test_genetic_algorithm();
     }
+
     return 0;
 }

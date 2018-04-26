@@ -37,10 +37,16 @@
 		<Unit filename="include/GeneticAlgorithm.h" />
 		<Unit filename="include/Network.h" />
 		<Unit filename="include/Node.h" />
+		<Unit filename="include/StringtoDouble.h" />
+		<Unit filename="include/TextParseHelper.h" />
+		<Unit filename="include/int_96.h" />
 		<Unit filename="main.cpp" />
 		<Unit filename="src/GeneticAlgorithm.cpp" />
 		<Unit filename="src/Network.cpp" />
 		<Unit filename="src/Node.cpp" />
+		<Unit filename="src/StringtoDouble.cpp" />
+		<Unit filename="src/TextParseHelper.cpp" />
+		<Unit filename="src/int_96.cpp" />
 		<Extensions>
 			<code_completion />
 			<envvars />

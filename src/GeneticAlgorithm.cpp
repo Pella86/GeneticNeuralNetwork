@@ -1,208 +1,18 @@
 #include "GeneticAlgorithm.h"
+#include "StringtoDouble.h"
+#include "TextParseHelper.h"
 
 #include <sstream>
 #include <cmath>
 
 using namespace std;
 
-#define VAR_STRING(v) #v
+class ScoredNetwork{
+public;
+    Network nn;
+    double score;
+};
 
-
-template<class T>
-string to_string(T value){
-    stringstream ss;
-    ss << value;
-    return ss.str();
-}
-
-template<typename T>
-T mystoi(string s){
-
-    int myi = 0;
-    int mag = 1;
-    bool invert = false;
-    string sini = s;
-    reverse(s.begin(), s.end());
-
-    for(auto c = s.begin(); c != s.end(); ++c){
-        if(*c == '-'){
-            invert = true;
-            continue;
-        }
-
-        if(*c >= 48 && *c <= 58){
-            myi += ((int)*c - 48)*mag;
-            mag *= 10;
-        };
-    }
-    if(invert){
-        myi *= -1;
-    }
-    cout << "mystoi: " << sini << " to " << myi << endl;
-
-    return myi;
-}
-
-string int2bin(int x){
-    string res = "";
-    int mask = 1;
-
-    for(int j = 0; j < 32; ++j){
-        if( (x & mask) > 0){ // scan i with the mask to show the sig bit
-            res+= "1";
-        }
-        else{
-            res += "0";
-        }
-        mask <<= 1;
-    }
-
-    reverse(res.begin(), res.end());
-
-    int slice = 0;
-    for(auto c = res.begin(); c != res.end(); ++c){
-        if(*c == '1'){
-            break;
-        }
-        slice++;
-    }
-    return res.substr(slice);
-}
-
-string frac2bin(int x){
-    string res = "";
-
-    double mag = 1;
-    double intpart = 0;
-
-    while( x / mag > 1){
-
-        mag *= 10;
-    }
-
-    double b = x / mag;
-
-    int cycle_counter = 0;
-
-    while (b != 0 && cycle_counter < 52){
-
-        b *= 2;
-        b = modf(b, &intpart);
-        cout << "b " << b << " " << intpart << endl;
-        if (intpart >= 1.0){
-            res += "1";
-        }
-        else{
-            res += "0";
-        }
-
-        ++cycle_counter;
-        cout << "b: " << b << " cycle " << cycle_counter << endl;
-    }
-
-    cout << "input " << x << " to bin " << res << endl;
-
-    return res;
-}
-
-double mystod(string s){
-    cout << "my string to double" << endl;
-    cout << "input string " << s << endl;
-
-    float myd;
-
-    string dpart;
-    string fpart;
-    bool switch_me = false;
-    int inverter = false;
-
-
-    for(string::iterator c = s.begin(); c != s.end(); ++c){
-        if(*c == '.' || *c == '-' || (*c >= 48 && *c <= 58)){
-            if(*c == '.'){
-                switch_me = true;
-                continue;
-            }
-
-            if(*c == '-'){
-                inverter = true;
-                continue;
-            }
-
-            if(switch_me){
-                fpart += *c;
-            }
-            else{
-                dpart += *c;
-            }
-        }
-    }
-
-    int idpart = mystoi<int>(dpart);
-    int ifpart = mystoi<int>(fpart);
-
-    cout << "input " << dpart << " decimal part " << idpart << " binary " << int2bin(idpart) << endl;
-    cout << "input " << fpart << " decimal part " << ifpart << " binary " << frac2bin(ifpart) << endl;
-
-    string sdpart = int2bin(idpart);
-    string sfpart = frac2bin(ifpart);
-
-    // calculate how many spaces to move to the left
-    int spaces = sdpart.size() - 1;
-    int exponent = spaces + 1023;//2^(k-1)-1 k = bit for exponent >> 11 >> 2^(11 -1)-1 >> 1023
-
-    cout << spaces << endl;
-    long long int myid = exponent;
-
-
-    myid <<= 52;
-
-    cout << myid << endl;
-
-
-
-    string mantissa = sdpart.substr(1) + sfpart;
-
-
-
-    cout << mantissa << endl;
-
-    // add trailin zeros to 52
-
-    while(mantissa.size() < 52){
-        mantissa += "0";
-    }
-
-    long long int manti = 0;
-    long long int mul = 1;
-
-    reverse(mantissa.begin(), mantissa.end());
-
-    for(auto c = mantissa.begin(); c != mantissa.end(); ++c){
-        if(*c == '1'){
-            manti += mul;
-        }
-        mul *= 2;
-    }
-    cout << manti << endl;
-
-    myid = myid ^ manti;
-
-    myd = myid;
-
-    if(inverter){
-        myd *= -1;
-    }
-
-    cout << myd << endl;
-
-
-
-
-
-    return myd;
-
-}
 
 GeneticAlgorithm::~GeneticAlgorithm()
 {
@@ -220,42 +30,26 @@ GeneticAlgorithm::GeneticAlgorithm(vector<int> n_layers, string folder_name){
     output_folder = folder_name;
 }
 
+
 GeneticAlgorithm::GeneticAlgorithm(string config_file){
     cout << "reading config file" << endl;
 
     ifstream file(config_file, ios::in);
 
-    map<string, string> data;
+    map<string, string> data; // contains the couple identifier value
 
     if(file.is_open()){
         string line;
 
+        // each line has a parameter
         while(getline(file, line)){
 
+            // skip empty lines and comments
             if(line.size() > 1 && line[0] != '#'){
-                cout << "reading line" << endl;
-                cout << line<< endl;
+                vector<string> sstring = str_split(line, '=');
 
-                string identifier;
-                string value;
-                bool switch_me = false;
-
-                for(size_t i = 0; i < line.size(); ++i){
-                    if(line[i] == '='){
-                        switch_me = true;
-                        continue;
-                    }
-
-                    if(switch_me){
-                        value += line[i];
-
-                    }
-                    else{
-                        if(line[i] != ' '){
-                            identifier += line[i];
-                        }
-                    }
-                }
+                string identifier = strip(sstring[0]);
+                string value = strip(sstring[1]);
 
                 cout << "[" << identifier << "]" << "[" << value << "]" << endl;
 
@@ -266,26 +60,24 @@ GeneticAlgorithm::GeneticAlgorithm(string config_file){
         file.close();
     }
 
-    pop_len = mystoi<int>(data[VAR_STRING(pop_len)]);
-    retain_n = mystoi<int>(data[VAR_STRING(retain_n)]);
-    rounds = mystoi<int>(data[VAR_STRING(rounds)]);
-    mut_chance = mystod(data[VAR_STRING(mut_chance)]);
-//    mut_chance = stod(data[3]);
-//    cross_chance = stod(data[4]);
+    this->pop_len = mystoi<int>(data["pop_len"]);
+    this->retain_n = mystoi<size_t>(data["retain_n"]);
+    this->rounds = mystoi<int>(data["rounds"]);
+    this->mut_chance = stod(data["mut_chance"]);
+    this->cross_chance = stod(data["cross_chance"]);
+    this->retain_chance = stod(data["retain_chance"]);
 
-//
-//    network_layers = n_layers;
-//    rounds = 10;
-//    output_folder = folder_name;
+    vector<string> nodes_layer_str = str_split(data["network_layers"], ' ');
 
-
-
-
+    for(auto s : nodes_layer_str){
+        this->network_layers.push_back(mystoi<int>(s));
+        cout << s << endl;
+    }
+    this->output_folder = data["output_folder"];
 }
 
 void GeneticAlgorithm::run(io_nn_type inputs, io_nn_type exp_outputs){
     cout << "Running genetic algorithm..." << endl;
-
     double first_best;
 
 
@@ -369,16 +161,6 @@ void GeneticAlgorithm::run(io_nn_type inputs, io_nn_type exp_outputs){
                 next_gen.push_back(scored_pop[i]);
             }
         }
-
-        // mutate the population
-//            int mut_count = 0;
-//            for(auto pnn: next_gen){
-//                if(rand_num(rng) < mut_chance){
-//                    mutate(pnn);
-//                    mut_count += 1;
-//                }
-//            }
-//            cout << "mutated " << mut_count << " individuals" << endl;
 
 
         for(size_t i = 0; i < retain_n; ++i){
