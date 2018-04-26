@@ -5,19 +5,26 @@
 #include <sstream>
 #include <cmath>
 
+#include <io.h>
+
 using namespace std;
 
-class ScoredNetwork{
-public;
-    Network nn;
-    double score;
-};
 
+ScoredNetwork::ScoredNetwork(){
+
+}
+
+ScoredNetwork::ScoredNetwork(double iscore, Network inn){
+    score = iscore;
+    nn = inn;
+}
 
 GeneticAlgorithm::~GeneticAlgorithm()
 {
     //dtor
 }
+
+GeneticAlgorithm::GeneticAlgorithm(){ga_initialized = false;}
 
 GeneticAlgorithm::GeneticAlgorithm(vector<int> n_layers, string folder_name){
     pop_len = 20;
@@ -28,13 +35,17 @@ GeneticAlgorithm::GeneticAlgorithm(vector<int> n_layers, string folder_name){
     network_layers = n_layers;
     rounds = 10;
     output_folder = folder_name;
+    ga_initialized = true;
 }
 
-
 GeneticAlgorithm::GeneticAlgorithm(string config_file){
+    read_from_file(config_file);
+}
+
+void GeneticAlgorithm::read_from_file(std::string filename){
     cout << "reading config file" << endl;
 
-    ifstream file(config_file, ios::in);
+    ifstream file(filename, ios::in);
 
     map<string, string> data; // contains the couple identifier value
 
@@ -56,33 +67,52 @@ GeneticAlgorithm::GeneticAlgorithm(string config_file){
                 data[identifier] = value;
             }
         }
-
         file.close();
+
+        this->pop_len = mystoi<int>(data["pop_len"]);
+        this->retain_n = mystoi<size_t>(data["retain_n"]);
+        this->rounds = mystoi<int>(data["rounds"]);
+        this->mut_chance = stod(data["mut_chance"]);
+        this->cross_chance = stod(data["cross_chance"]);
+        this->retain_chance = stod(data["retain_chance"]);
+
+        vector<string> nodes_layer_str = str_split(data["network_layers"], ' ');
+
+        for(auto s : nodes_layer_str){
+            this->network_layers.push_back(mystoi<int>(s));
+            cout << s << endl;
+        }
+        this->output_folder =strip(data["output_folder"]);
+        ga_initialized = true;
     }
-
-    this->pop_len = mystoi<int>(data["pop_len"]);
-    this->retain_n = mystoi<size_t>(data["retain_n"]);
-    this->rounds = mystoi<int>(data["rounds"]);
-    this->mut_chance = stod(data["mut_chance"]);
-    this->cross_chance = stod(data["cross_chance"]);
-    this->retain_chance = stod(data["retain_chance"]);
-
-    vector<string> nodes_layer_str = str_split(data["network_layers"], ' ');
-
-    for(auto s : nodes_layer_str){
-        this->network_layers.push_back(mystoi<int>(s));
-        cout << s << endl;
+    else{
+        ga_initialized = false;
     }
-    this->output_folder = data["output_folder"];
 }
+
+void GeneticAlgorithm::save_networks(vector<ScoredNetwork> population, string network_name){
+    int state = mkdir(output_folder.c_str());
+
+    if(state == 0){
+        cout << "Folder created" << endl;
+    }
+    else{
+        cout << "Folder not created, either existing or wrong path" << endl;
+    }
+
+    int bytes = 0;
+    for(size_t i = 0; i < population.size(); ++i){
+        string filename = output_folder + network_name + "_" + to_string(i) + ".nnf";
+        bytes += population[i].nn.save_to_file(filename);
+    }
+    cout << "Networks saved, bytes written: " << bytes << endl;
+}
+
+
 
 void GeneticAlgorithm::run(io_nn_type inputs, io_nn_type exp_outputs){
     cout << "Running genetic algorithm..." << endl;
     double first_best;
-
-
-    cout << "Input/expected output pairs for nn test" << endl;
-    assert(inputs.size() == exp_outputs.size());
 
     // print to console inputs vs expected outputs
     for(size_t i = 0; i < inputs.size(); ++i){
@@ -110,10 +140,10 @@ void GeneticAlgorithm::run(io_nn_type inputs, io_nn_type exp_outputs){
     // score the population
     cout << "Scoring initial population..." << endl;
 
-    vector<pair<double, Network>> scored_pop;
+    vector<ScoredNetwork> scored_pop;
     for(auto nn : population){
         double nn_score = score(nn, inputs, exp_outputs);
-        pair<double, Network> p(nn_score, nn);
+        ScoredNetwork p(nn_score, nn);
         scored_pop.push_back(p);
     }
 
@@ -122,29 +152,24 @@ void GeneticAlgorithm::run(io_nn_type inputs, io_nn_type exp_outputs){
 
     // custom score sorter to access the pair variables
     struct{
-        bool operator()(pair<double, Network> a, pair<double, Network> b){
-            return a.first < b.first;
+        bool operator()(ScoredNetwork a, ScoredNetwork b){
+            return a.score < b.score;
         }
     } CustomScoreSorting;
+
     sort(scored_pop.begin(), scored_pop.end(), CustomScoreSorting);
 
-    first_best = scored_pop.begin()->first;
+    first_best = scored_pop.begin()->score;
 
     cout << "Saving networks..." << endl;
-
-    int name_counter = 0;
-    for(auto pnn : scored_pop){
-        string nn_name = output_folder + "/init_nn_" + to_string(name_counter);
-        pnn.second.save_to_file(nn_name);
-        ++name_counter;
-    }
+    save_networks(scored_pop, "init_pop");
 
     // run the simulation
     cout << "Running the generations..." << endl;
 
     for(int i = 0; i < rounds; ++i){
         cout << "--------- generation " << i << "-------------" << endl;
-        vector<pair<double, Network>> next_gen;
+        vector<ScoredNetwork> next_gen;
 
         // add the first retain_n neural networks to next generation
         assert(retain_n < scored_pop.size());
@@ -162,10 +187,13 @@ void GeneticAlgorithm::run(io_nn_type inputs, io_nn_type exp_outputs){
             }
         }
 
-
-        for(size_t i = 0; i < retain_n; ++i){
-            next_gen.push_back(mutate(next_gen[i]));
+        // mutate the population
+        for(size_t i = 1; i < next_gen.size(); ++i){
+            if(rand_num(rng) < mut_chance){
+                mutate(next_gen[i]);
+            }
         }
+
         // cross population
 
         // calculate number of children to come up to the pop length
@@ -173,7 +201,7 @@ void GeneticAlgorithm::run(io_nn_type inputs, io_nn_type exp_outputs){
         cout << "generating " << n_children << " children" << endl;
 
         // prepare vector to contain the children
-        vector<pair<double, Network>> children;
+        vector<ScoredNetwork> children;
 
         // inizialize the random parent number distribution
         uniform_int_distribution<size_t> rand_child(0, next_gen.size() - 1);
@@ -185,19 +213,19 @@ void GeneticAlgorithm::run(io_nn_type inputs, io_nn_type exp_outputs){
 
             // skip if male and female are the same
             if(male_n != female_n){
-                pair<double, Network> male = next_gen[male_n];
-                pair<double, Network> female = next_gen[female_n];
+                ScoredNetwork const& male = next_gen[male_n];
+                ScoredNetwork const& female = next_gen[female_n];
 
-                pair<double, Network> child = female;
+                ScoredNetwork child = female;
                 // reset score
-                child.first = -1;
+                child.score = -1;
 
                 // chose which node to give, the child is default female
                 // but by random choice inherits from male
-                for(size_t lit = 0; lit < child.second.layers.size(); ++lit){
-                    for(size_t nit = 0; nit < child.second.layers[lit].size(); ++nit){
+                for(size_t lit = 0; lit < child.nn.layers.size(); ++lit){
+                    for(size_t nit = 0; nit < child.nn.layers[lit].size(); ++nit){
                         if(rand_num(rng) < cross_chance){
-                            child.second.layers[lit][nit] = male.second.layers[lit][nit];
+                            child.nn.layers[lit][nit] = male.nn.layers[lit][nit];
                         }
                     }
                 }
@@ -211,8 +239,8 @@ void GeneticAlgorithm::run(io_nn_type inputs, io_nn_type exp_outputs){
         cout << "scoring new generation" << endl;
 
         for(size_t ipnn = 0; ipnn < next_gen.size(); ++ipnn){
-            if(next_gen[ipnn].first < 0){
-                next_gen[ipnn].first = score(next_gen[ipnn].second, inputs, exp_outputs);
+            if(next_gen[ipnn].score < 0){
+                next_gen[ipnn].score = score(next_gen[ipnn].nn, inputs, exp_outputs);
             }
         }
         cout << "sorting new generation" << endl;
@@ -222,56 +250,38 @@ void GeneticAlgorithm::run(io_nn_type inputs, io_nn_type exp_outputs){
         scored_pop.clear();
         scored_pop = next_gen;
         cout << "Algorithm performance, first best " << first_best << endl;
-        cout << "First: " << next_gen.begin()->first << " Last: " << next_gen.back().first << endl;
+        cout << "First: " << next_gen.begin()->score << " Last: " << next_gen.back().score << endl;
 
     }
 
-    // proof of concept
-    vector<Network> result_pop;
-    for(auto pnn : scored_pop){
-        result_pop.push_back(pnn.second);
-    }
-
-    cout << "Saving resulting networks" << endl;
-    name_counter = 0;
-    for(auto nn : result_pop){
-        string nn_name = output_folder + "/final_nn_" + to_string(name_counter);
-        nn.save_to_file(nn_name);
-        ++name_counter;
-    }
-
-    cout << "score: " << score(init_pop[0], inputs, exp_outputs) << endl;
-    cout << "score: " << score(result_pop[0], inputs, exp_outputs) << endl;
+    cout << "Saving networks..." << endl;
+    save_networks(scored_pop, "resulting_pop");
 
     for(size_t i = 0; i < inputs.size(); ++i){
-        cout << "---- input: ------" << endl;
+        cout << "---- io pair ------" << endl;
+        cout << "inputs" << endl;
         for(auto j : inputs[i]) cout << j << " ";
         cout << endl;
 
         cout << "expected output" << endl;
-        for(auto j : exp_outputs[i]) cout << j;
+        for(auto j : exp_outputs[i]) cout << j << " ";
         cout << endl;
 
+        cout << "----" << endl;
         vector<double> output;
-
-
-        for(size_t j = 0; j < 1/*scored_pop.size()*/; ++j){
+        for(size_t j = 0; j < 1 /*scored_pop.size()*/; ++j){
             output = init_pop[j].calculate(inputs[i]);
-            cout << "init pop" << endl;
+            cout << "init pop output" << endl;
 
-            cout << "output: ";
             for(auto o : output){
                 cout << o << " ";
             }
             cout << endl;
             output.clear();
 
-            cout << "----" << endl;
+            output = scored_pop[j].nn.calculate(inputs[i]);
+            cout << "refined pop output" << endl;
 
-            output = result_pop[j].calculate(inputs[i]);
-            cout << "refined pop" << endl;
-
-            cout << "output: ";
             for(auto o : output) {
                 cout << o << " ";
             }
@@ -285,21 +295,20 @@ void GeneticAlgorithm::run(io_nn_type inputs, io_nn_type exp_outputs){
 
 }
 
-pair<double, Network> GeneticAlgorithm::mutate(pair<double, Network> pnn){
+void GeneticAlgorithm::mutate(ScoredNetwork& pnn){
 
-    pair<double, Network> res_nn;
     // reset score
-    res_nn.first = -1;
+    pnn.score = -1;
 
     // proceed with the mutation
-    Network nn = pnn.second;
+    Network& nn = pnn.nn;
 
     // pick a random layer
     uniform_int_distribution<size_t> rand_layer(0, nn.layers.size() - 1);
     size_t layer_n = rand_layer(rng);
 
     // pick a random node in that layer
-    vector<Node> nodes = nn.layers[layer_n];
+    vector<Node>& nodes = nn.layers[layer_n];
     uniform_int_distribution<size_t> rand_node(0, nodes.size() - 1);
     size_t node_n = rand_node(rng);
 
@@ -317,9 +326,6 @@ pair<double, Network> GeneticAlgorithm::mutate(pair<double, Network> pnn){
     for(size_t iw = 0; iw < nweights; ++iw){
         n.w[iw] = rand_n(rng);
     }
-    res_nn.second = nn;
-    return res_nn;
-
 }
 
 double GeneticAlgorithm::score(Network nn, io_nn_type inputs, io_nn_type exp_results){
@@ -333,8 +339,6 @@ double GeneticAlgorithm::score(Network nn, io_nn_type inputs, io_nn_type exp_res
 
         // assign to a place holder the right expected result
         vector<double> exp_res = exp_results[i];
-
-
 
         // calculate the differences
         assert(network_output.size() == exp_res.size());

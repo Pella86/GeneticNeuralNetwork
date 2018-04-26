@@ -23,7 +23,7 @@ class Network
         virtual ~Network();
 
         // save network to file
-        void save_to_file(std::string filename);
+        int save_to_file(std::string filename);
 
         // calculate network output
         std::vector<double> calculate(std::vector<double> input);

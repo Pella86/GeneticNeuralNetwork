@@ -3,6 +3,8 @@
 #include <string>
 #include <sstream>
 
+#include <unistd.h>
+
 
 #include "GeneticAlgorithm.h"
 #include "TextParseHelper.h"
@@ -18,7 +20,6 @@ string vec2str(vector<T> v){
     ss << ")";
     return ss.str();
 }
-
 
 void test_node(){
     cout << "Test node..." << endl;
@@ -41,7 +42,6 @@ void test_node(){
 
     cout << read_node << endl;
 }
-
 
 void test_network(){
     cout << "Testing network..." << endl;
@@ -108,12 +108,11 @@ void test_genetic_algorithm(){
     }
 
     vector<int> n_layers = {input_n, 32, 16, 8, output_n};
-    string folder_name = "C:/Users/Mauro/Desktop/Vita Online/Programming/Neural Networks ref/data/ga_cpp_run";
-    GeneticAlgorithm ga(n_layers, folder_name);
+    string output_folder = "./test_run/";
+    GeneticAlgorithm ga(n_layers, output_folder);
 
     ga.run(inputs, outputs);
 }
-
 
 vector<vector<double>> read_iofile_txt(string filename){
     ifstream file(filename, ios::in);
@@ -152,44 +151,167 @@ vector<vector<double>> read_iofile_txt(string filename){
     return inputs;
 }
 
-int main()
+int main(int argc, char** argv)
 {
-    bool test = false;
 
+    // se è una cartella scan for the files -d
 
+    int c;
 
-    cout << "test input read" << endl;
+    bool optd = false;
+    string darg;
+    bool opti = false;
+    string iarg;
+    bool opto = false;
+    string oarg;
+    bool optc = false;
+    string carg;
+    bool opth = false;
+    bool optt = false;
 
-    vector<vector<double>> inputs = read_iofile_txt("./data/GA_inputs.txt");
+    while( (c = getopt(argc, argv, "htd:i:o:c:") ) != -1 ){
+        switch(c){
+            case 'd':
+                optd = true;
+                darg = optarg;
+            break;
+            case 'i':
+                opti = true;
+                iarg = optarg;
+            break;
+            case 'o':
+                opto = true;
+                oarg = optarg;
+            break;
+            case 'c':
+                optc = true;
+                carg = optarg;
+            break;
+            case 't':
+                optt = true;
+            break;
+            case 'h':
+            default:
+                opth = true;
+            break;
 
-    cout << "retrived inputs" << endl;
-    for(auto v : inputs){
-        cout << vec2str(v) << endl;
+        }
     }
 
-    vector<vector<double>> outputs = read_iofile_txt("./data/GA_outputs.txt");
-
-    cout << "retrived outputs" << endl;
-    for(auto v : outputs){
-        cout << vec2str(v) << endl;
+    if(optc || optd || opti || opto || optt){
+        // continue
+    }
+    else{
+        opth = true;
     }
 
-    cout << "test genetic algorithm" << endl;
+    vector<vector<double>> inputs;
+    vector<vector<double>> outputs;
 
-    GeneticAlgorithm ga("./data/GA_config.txt");
+    GeneticAlgorithm ga;
 
-    ga.run(inputs, outputs);
 
-    if(test){
+    if(optd){
+        cout << "d option: " << darg << endl;
+
+        string darg_s(darg);
+
+        // look in the folder for config file, input, output
+
+        inputs = read_iofile_txt(darg_s + "GA_inputs.txt");
+        outputs = read_iofile_txt(darg_s + "GA_outputs.txt");
+        ga.read_from_file(darg_s + "GA_config.txt");
+
+
+    }
+
+    if(opti && opto && optc){
+
+        inputs = read_iofile_txt((string)iarg);
+        outputs = read_iofile_txt((string)oarg);
+        ga.read_from_file((string)carg);
+    }
+
+   if(ga.ga_initialized){
+
+        if(inputs.size() > 0 && outputs.size() > 0 && inputs.size() == outputs.size()){
+            ga.run(inputs, outputs);
+        }
+        else{
+            cout << "Inputs or outputs badly formatted." << endl;
+        }
+
+    }
+    else{
+        cout << "Genetic Algorithm not initialized correctly" << endl;
+    }
+
+    if(optt){
+        cout << "Test run" << endl;
+
+        cout << "Testing node" << endl;
         /*Node testing functions*/
         test_node();
 
+        cout << "Testing algorithm" << endl;
         /*Network testing functions*/
         test_network();
 
+        cout << "Test genetic algorithm" << endl;
         /*Genetic algorithm tests*/
         test_genetic_algorithm();
+
     }
+
+    if(opth){
+
+        cout << "- Usage -" << endl;
+    }
+
+
+    // se è -i inputs -o outputs -c config
+    // -h help
+    // -t test
+
+
+
+
+//    bool test = false;
+//
+//
+//
+//    cout << "test input read" << endl;
+//
+//    vector<vector<double>> inputs = read_iofile_txt("./data/GA_inputs.txt");
+//
+//    cout << "retrived inputs" << endl;
+//    for(auto v : inputs){
+//        cout << vec2str(v) << endl;
+//    }
+//
+//    vector<vector<double>> outputs = read_iofile_txt("./data/GA_outputs.txt");
+//
+//    cout << "retrived outputs" << endl;
+//    for(auto v : outputs){
+//        cout << vec2str(v) << endl;
+//    }
+//
+//    cout << "test genetic algorithm" << endl;
+//
+//    GeneticAlgorithm ga("./data/GA_config.txt");
+//
+//    ga.run(inputs, outputs);
+//
+//    if(test){
+//        /*Node testing functions*/
+//        test_node();
+//
+//        /*Network testing functions*/
+//        test_network();
+//
+//        /*Genetic algorithm tests*/
+//        test_genetic_algorithm();
+//    }
 
     return 0;
 }

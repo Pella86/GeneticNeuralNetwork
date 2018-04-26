@@ -1,9 +1,10 @@
 # depslib dependency file v1.0
-1524681307 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\main.cpp
+1524765352 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\main.cpp
 	<iostream>
 	<vector>
 	<string>
 	<sstream>
+	<unistd.h>
 	"GeneticAlgorithm.h"
 	"TextParseHelper.h"
 	"StringtoDouble.h"
@@ -19,7 +20,7 @@
 	"Node.h"
 	<cmath>
 
-1524255715 c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\include\network.h
+1524759179 c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\include\network.h
 	<string>
 	<vector>
 	<random>
@@ -28,17 +29,18 @@
 	<random>
 	"Node.h"
 
-1524255745 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\src\network.cpp
+1524759384 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\src\network.cpp
 	"Network.h"
 
-1524682503 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\src\geneticalgorithm.cpp
+1524765420 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\src\geneticalgorithm.cpp
 	"GeneticAlgorithm.h"
 	"StringtoDouble.h"
 	"TextParseHelper.h"
 	<sstream>
 	<cmath>
+	<io.h>
 
-1524256704 c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\include\geneticalgorithm.h
+1524763873 c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\include\geneticalgorithm.h
 	<vector>
 	<string>
 	<random>

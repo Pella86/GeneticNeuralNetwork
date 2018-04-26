@@ -72,19 +72,18 @@ Network::Network(vector<int> node_layers, default_random_engine& rng, double mu,
 }
 
 
-void Network::save_to_file(string filename){
+int Network::save_to_file(string filename){
     ofstream file(filename, ios::out | ios::binary);
+    streampos co;
     if(file.is_open()){
-        streampos co = 0; // cumulative offset set to the beginning of file
+        co = 0; // cumulative offset set to the beginning of file
 
         // write number of layers
         int n_layers = layers.size();
-        cout << "written number layers:" << n_layers << endl;
         file.write(reinterpret_cast<char*> (&n_layers), sizeof(n_layers));
         co += sizeof(n_layers);
 
         // write layers per node
-        cout << "writing layer per node..." << endl;
         for(vector<Node> layer : layers) {
             int n_nodes = layer.size();
             file.seekp(co);
@@ -100,10 +99,10 @@ void Network::save_to_file(string filename){
                 ++node_counter;
             }
         }
-        cout << "written " << node_counter << " nodes" << endl;
-        cout << "total bytes written: " << co <<endl;
+        file.close();
     }
-    file.close();
+
+    return (int)co;
 }
 
 
