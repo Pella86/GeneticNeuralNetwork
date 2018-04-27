@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1524765352 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\main.cpp
+1524822444 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\main.cpp
 	<iostream>
 	<vector>
 	<string>
@@ -8,6 +8,7 @@
 	"GeneticAlgorithm.h"
 	"TextParseHelper.h"
 	"StringtoDouble.h"
+	"TestHelper.h"
 
 1524255202 c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\include\node.h
 	<vector>
@@ -49,10 +50,9 @@
 	<algorithm>
 	"Network.h"
 
-1524649070 c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\include\stringtodouble.h
+1524821025 c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\include\stringtodouble.h
 	<string>
 	<inttypes.h>
-	"int_96.h"
 
 1524649636 c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\include\int_96.h
 	<ostream>
@@ -60,8 +60,9 @@
 1524649648 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\src\int_96.cpp
 	"int_96.h"
 
-1524649286 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\src\stringtodouble.cpp
+1524821044 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\src\stringtodouble.cpp
 	"StringtoDouble.h"
+	"int_96.h"
 
 1524682789 c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\include\textparsehelper.h
 	<string>
@@ -72,4 +73,18 @@
 1524675581 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\src\textparsehelper.cpp
 	"TextParseHelper.h"
 	<algorithm>
+
+1524820138 c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\include\testhelper.h
+
+1524822398 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\src\testhelper.cpp
+	"TestHelper.h"
+	<iostream>
+	<random>
+	<string>
+	<vector>
+	<algorithm>
+	<sstream>
+	"Node.h"
+	"Network.h"
+	"GeneticAlgorithm.h"
 

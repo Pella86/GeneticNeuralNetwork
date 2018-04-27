@@ -3,7 +3,6 @@
 
 #include <string>
 #include <inttypes.h>
-#include "int_96.h"
 
 /*******************************************************************************
  prepNumber
