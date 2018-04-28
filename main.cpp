@@ -93,23 +93,23 @@ int main(int argc, char** argv)
 
         string darg_s(darg);
 
-        string filename_inputs = darg + "GA_inputs.txt";
+        string filename_inputs = darg_s + "GA_inputs.txt";
         ifstream file_inputs(filename_inputs);
         if(file_inputs.good()){
            inputs = read_iofile_txt(filename_inputs);
         }
         else{
-            filename_inputs = darg + "GA_inputs.nni";
+            filename_inputs = darg_s + "GA_inputs.nni";
             inputs = read_iofile_bin(filename_inputs);
         }
 
-        string filename_outputs = darg + "GA_outputs.txt";
+        string filename_outputs = darg_s + "GA_outputs.txt";
         ifstream file_outputs(filename_outputs);
         if(file_outputs.good()){
            inputs = read_iofile_txt(filename_outputs);
         }
         else{
-            filename_outputs = darg + "GA_outputs.nni";
+            filename_outputs = darg_s + "GA_outputs.nni";
             outputs = read_iofile_bin(filename_outputs);
         }
 
@@ -228,6 +228,7 @@ vector<vector<double>> read_iofile_txt(string filename){
 
 vector<vector<double>> read_iofile_bin(string filename){
 
+    cout << "Reading binary file..." << endl;
     ifstream file(filename, ios::in | ios::binary);
     streampos co = 512;
 
@@ -244,7 +245,7 @@ vector<vector<double>> read_iofile_bin(string filename){
         file.read(reinterpret_cast<char*> (&n_io), sizeof(size_t));
         co += sizeof(size_t);
 
-
+        cout << "Matrix: " << n_pairs << "x" << n_io << endl;
 
         for(size_t i = 0; i < n_pairs; ++i){
             vector<double> line;

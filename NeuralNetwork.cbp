@@ -11,7 +11,7 @@
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="-t" />
+				<Option parameters="-c ./GA_config.txt -i ./GA_bin_inputs.nni -o ./GA_bin_outputs.nni" />
 				<Compiler>
 					<Add option="-g" />
 					<Add directory="include" />
@@ -39,6 +39,7 @@
 		<Unit filename="include/Network.h" />
 		<Unit filename="include/Node.h" />
 		<Unit filename="include/StringtoDouble.h" />
+		<Unit filename="include/TestHelper.h" />
 		<Unit filename="include/TextParseHelper.h" />
 		<Unit filename="include/int_96.h" />
 		<Unit filename="main.cpp" />
@@ -46,6 +47,7 @@
 		<Unit filename="src/Network.cpp" />
 		<Unit filename="src/Node.cpp" />
 		<Unit filename="src/StringtoDouble.cpp" />
+		<Unit filename="src/TestHelper.cpp" />
 		<Unit filename="src/TextParseHelper.cpp" />
 		<Unit filename="src/int_96.cpp" />
 		<Extensions>
