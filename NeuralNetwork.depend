@@ -1,23 +1,24 @@
 # depslib dependency file v1.0
-1524822444 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\main.cpp
+1525072248 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\main.cpp
 	<iostream>
 	<vector>
 	<string>
 	<sstream>
+	<map>
 	<unistd.h>
 	"GeneticAlgorithm.h"
 	"TextParseHelper.h"
 	"StringtoDouble.h"
 	"TestHelper.h"
 
-1524255202 c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\include\node.h
+1525067523 c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\include\node.h
 	<vector>
 	<string>
 	<random>
 	<fstream>
 	<iostream>
 
-1524254814 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\src\node.cpp
+1525067816 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\src\node.cpp
 	"Node.h"
 	<cmath>
 
@@ -30,29 +31,28 @@
 	<random>
 	"Node.h"
 
-1524759384 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\src\network.cpp
+1525067422 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\src\network.cpp
 	"Network.h"
 
-1524765420 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\src\geneticalgorithm.cpp
+1525070162 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\src\geneticalgorithm.cpp
 	"GeneticAlgorithm.h"
-	"StringtoDouble.h"
-	"TextParseHelper.h"
 	<sstream>
 	<cmath>
+	<cassert>
+	<algorithm>
+	<map>
 	<io.h>
+	"StringtoDouble.h"
+	"TextParseHelper.h"
 
-1524763873 c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\include\geneticalgorithm.h
+1524931493 c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\include\geneticalgorithm.h
 	<vector>
 	<string>
 	<random>
-	<map>
-	<cassert>
-	<algorithm>
 	"Network.h"
 
-1524821025 c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\include\stringtodouble.h
+1525071035 c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\include\stringtodouble.h
 	<string>
-	<inttypes.h>
 
 1524649636 c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\include\int_96.h
 	<ostream>
@@ -60,23 +60,24 @@
 1524649648 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\src\int_96.cpp
 	"int_96.h"
 
-1524821044 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\src\stringtodouble.cpp
+1525071468 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\src\stringtodouble.cpp
 	"StringtoDouble.h"
+	<cinttypes>
 	"int_96.h"
 
-1524682789 c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\include\textparsehelper.h
+1525070094 c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\include\textparsehelper.h
 	<string>
 	<vector>
 	<sstream>
 	<iostream>
 
-1524675581 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\src\textparsehelper.cpp
+1525069849 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\src\textparsehelper.cpp
 	"TextParseHelper.h"
 	<algorithm>
 
 1524820138 c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\include\testhelper.h
 
-1524822398 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\src\testhelper.cpp
+1524927714 source:c:\users\mauro\desktop\vita online\programming\neuralnetwork_cpp\neuralnetwork\src\testhelper.cpp
 	"TestHelper.h"
 	<iostream>
 	<random>

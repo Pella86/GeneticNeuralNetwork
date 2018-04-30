@@ -1,15 +1,23 @@
 #include "GeneticAlgorithm.h"
-#include "StringtoDouble.h"
-#include "TextParseHelper.h"
 
 #include <sstream>
 #include <cmath>
-
+#include <cassert>
+#include <algorithm>
+#include <map>
 #include <io.h>
+
+#include "StringtoDouble.h"
+#include "TextParseHelper.h"
+
 
 using namespace std;
 
+/*******************************************************************************
+ Scored Network helper
+*******************************************************************************/
 
+/*Scored Network helper class*/
 ScoredNetwork::ScoredNetwork(){
 
 }
@@ -19,13 +27,17 @@ ScoredNetwork::ScoredNetwork(double iscore, Network inn){
     nn = inn;
 }
 
-GeneticAlgorithm::~GeneticAlgorithm()
-{
-    //dtor
+/*******************************************************************************
+ Genetic algorithm
+*******************************************************************************/
+
+/* Constructors */
+
+GeneticAlgorithm::GeneticAlgorithm(){
+    ga_initialized = false;
 }
 
-GeneticAlgorithm::GeneticAlgorithm(){ga_initialized = false;}
-
+// default values
 GeneticAlgorithm::GeneticAlgorithm(vector<int> n_layers, string folder_name){
     pop_len = 20;
     retain_n = 5;
@@ -42,8 +54,19 @@ GeneticAlgorithm::GeneticAlgorithm(string config_file){
     read_from_file(config_file);
 }
 
+GeneticAlgorithm::~GeneticAlgorithm()
+{
+    //dtor
+}
+
+// procedure to read the config file
 void GeneticAlgorithm::read_from_file(std::string filename){
-    cout << "reading config file" << endl;
+    cout << "Reading config file" << endl;
+
+    // File format
+    // # and newline are ignored
+    // parameters are separated by the = symbol and the left value
+    // corresponds to the member parameter while the right the member value
 
     ifstream file(filename, ios::in);
 
@@ -62,33 +85,35 @@ void GeneticAlgorithm::read_from_file(std::string filename){
                 string identifier = strip(sstring[0]);
                 string value = strip(sstring[1]);
 
-                cout << "[" << identifier << "]" << "[" << value << "]" << endl;
+                cout << "[" << identifier << "]=[" << value << "]" << endl;
 
                 data[identifier] = value;
             }
         }
         file.close();
 
-        this->pop_len = mystoi<int>(data["pop_len"]);
-        this->retain_n = mystoi<size_t>(data["retain_n"]);
-        this->rounds = mystoi<int>(data["rounds"]);
-        this->mut_chance = stod(data["mut_chance"]);
-        this->cross_chance = stod(data["cross_chance"]);
-        this->retain_chance = stod(data["retain_chance"]);
+        // assign the retrived values to the class members
+        pop_len = mystoi<int>(data["pop_len"]);
+        retain_n = mystoi<size_t>(data["retain_n"]);
+        rounds = mystoi<int>(data["rounds"]);
+        mut_chance = stod(data["mut_chance"]);
+        cross_chance = stod(data["cross_chance"]);
+        retain_chance = stod(data["retain_chance"]);
 
         vector<string> nodes_layer_str = str_split(data["network_layers"], ' ');
-
         for(auto s : nodes_layer_str){
-            this->network_layers.push_back(mystoi<int>(s));
-            cout << s << endl;
+            network_layers.push_back(mystoi<int>(s));
         }
-        this->output_folder =strip(data["output_folder"]);
+
+        output_folder =strip(data["output_folder"]);
         ga_initialized = true;
     }
     else{
         ga_initialized = false;
     }
 }
+
+/* I/O functions */
 
 void GeneticAlgorithm::save_networks(vector<ScoredNetwork> population, string network_name){
     int state = mkdir(output_folder.c_str());
@@ -108,22 +133,42 @@ void GeneticAlgorithm::save_networks(vector<ScoredNetwork> population, string ne
     cout << "Networks saved, bytes written: " << bytes << endl;
 }
 
+/* Algorithm central function */
 
+string slice(string str, size_t start, size_t stop){
+    string sliced = "";
+    for(size_t i = start; i < stop; ++i){
+        sliced += str[i];
+    }
+    return sliced;
+}
 
-void GeneticAlgorithm::run(io_nn_type inputs, io_nn_type exp_outputs){
+void limited_output(vector<double> v, int limit){
+    stringstream ss;
+    for(auto j : v) ss << j << " ";
+    cout << ( (ss.str().size() > 60)? slice(ss.str(), 0, 60) + "..." : ss.str() ) << endl;
+}
+
+void GeneticAlgorithm::run(io_matrix inputs, io_matrix exp_outputs){
     cout << "Running genetic algorithm..." << endl;
     double first_best;
 
     // print to console inputs vs expected outputs
-    for(size_t i = 0; i < inputs.size(); ++i){
+    // in order to avoid printing too many values, the inputs will be cut to
+    // the first 65 characters
+
+    size_t disp_io_pairs = (inputs.size() > 5)? 5 : inputs.size();
+    for(size_t i = 0; i < disp_io_pairs; ++i){
         cout << "input: " << endl;
-        for(auto j : inputs[i]) cout << j;
-        cout << endl;
+        limited_output(inputs[i], 65);
 
-        cout << "expected output" << endl;
-        for(auto j : exp_outputs[i]) cout << j;
-        cout << endl;
+        cout << "expected output:" << endl;
+        limited_output(exp_outputs[i], 65);
 
+        cout << endl;
+    }
+    if(inputs.size() > 5){
+        cout << "and more i/o pairs..." << endl;
     }
 
     // create a population of random initialized neural networks
@@ -159,6 +204,7 @@ void GeneticAlgorithm::run(io_nn_type inputs, io_nn_type exp_outputs){
 
     sort(scored_pop.begin(), scored_pop.end(), CustomScoreSorting);
 
+    // store the best for diagnosis purposes
     first_best = scored_pop.begin()->score;
 
     cout << "Saving networks..." << endl;
@@ -217,6 +263,7 @@ void GeneticAlgorithm::run(io_nn_type inputs, io_nn_type exp_outputs){
                 ScoredNetwork const& female = next_gen[female_n];
 
                 ScoredNetwork child = female;
+
                 // reset score
                 child.score = -1;
 
@@ -233,6 +280,8 @@ void GeneticAlgorithm::run(io_nn_type inputs, io_nn_type exp_outputs){
             }
 
         }
+
+        // add children to the next generation
         next_gen.insert(next_gen.end(), children.begin(), children.end());
 
         // score and sort
@@ -243,10 +292,11 @@ void GeneticAlgorithm::run(io_nn_type inputs, io_nn_type exp_outputs){
                 next_gen[ipnn].score = score(next_gen[ipnn].nn, inputs, exp_outputs);
             }
         }
-        cout << "sorting new generation" << endl;
 
+        cout << "sorting new generation" << endl;
         sort(next_gen.begin(), next_gen.end(), CustomScoreSorting);
 
+        // assing the new generation to the old variable to trigger the loop again
         scored_pop.clear();
         scored_pop = next_gen;
         cout << "Algorithm performance, first best " << first_best << endl;
@@ -260,35 +310,23 @@ void GeneticAlgorithm::run(io_nn_type inputs, io_nn_type exp_outputs){
     for(size_t i = 0; i < inputs.size(); ++i){
         cout << "---- io pair ------" << endl;
         cout << "inputs" << endl;
-        for(auto j : inputs[i]) cout << j << " ";
-        cout << endl;
+        limited_output(inputs[i], 65);
 
         cout << "expected output" << endl;
-        for(auto j : exp_outputs[i]) cout << j << " ";
-        cout << endl;
+        limited_output(exp_outputs[i], 65);
 
         cout << "----" << endl;
         vector<double> output;
         for(size_t j = 0; j < 1 /*scored_pop.size()*/; ++j){
             output = init_pop[j].calculate(inputs[i]);
             cout << "init pop output" << endl;
-
-            for(auto o : output){
-                cout << o << " ";
-            }
-            cout << endl;
+            limited_output(output, 65);
             output.clear();
 
             output = scored_pop[j].nn.calculate(inputs[i]);
             cout << "refined pop output" << endl;
-
-            for(auto o : output) {
-                cout << o << " ";
-            }
-            cout << endl;
+            limited_output(output, 65);
             output.clear();
-
-
         }
 
     }
@@ -328,7 +366,7 @@ void GeneticAlgorithm::mutate(ScoredNetwork& pnn){
     }
 }
 
-double GeneticAlgorithm::score(Network nn, io_nn_type inputs, io_nn_type exp_results){
+double GeneticAlgorithm::score(Network nn, io_matrix inputs, io_matrix exp_results){
     // scores a given neural network nn using inputs and comparing them to
     // expected results with the least squared difference method
 

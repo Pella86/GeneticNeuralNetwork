@@ -19,7 +19,7 @@ Network::Network(string filename){
     ifstream file(filename, ios::in|ios::binary);
     if(file.is_open()){
         cout << "Reading network..." << endl;
-        // read the first int -> lengths of layers
+        // read the first int -> size of layers
         int n_layers;
         file.read(reinterpret_cast<char*>(&n_layers), sizeof(int));
         co += sizeof(int);
@@ -61,7 +61,7 @@ Network::Network(vector<int> node_layers, default_random_engine& rng, double mu,
         vector<Node> nv;
         layers.push_back(nv);
 
-        // append each layers n nodes
+        // append to each layer n random nodes
         int n_nodes = node_layers[ilayer];
         for(int inode = 0; inode < n_nodes; ++inode){
             int n_nodes = node_layers[ilayer - 1];
@@ -102,10 +102,13 @@ int Network::save_to_file(string filename){
         file.close();
     }
 
+    // return the cumulative offset (basically total bytes written)
     return (int)co;
 }
 
-
+// network output calculation
+// the output is the nodes output multiplied by the next layer nodes weight and
+// biases.
 vector<double> Network::calculate(vector<double> input){
     //the input is copied in a dynamic input array that will be reused in
     //the calculation cycle

@@ -11,7 +11,7 @@
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="-c ./GA_config.txt -i ./GA_bin_inputs.nni -o ./GA_bin_outputs.nni" />
+				<Option parameters="-d ./data/" />
 				<Compiler>
 					<Add option="-g" />
 					<Add directory="include" />

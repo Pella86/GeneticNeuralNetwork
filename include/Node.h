@@ -10,6 +10,7 @@
 class Node
 {
     public:
+        // constructors
         Node();
         Node(std::vector<double> inw, double inb);
         Node(std::string filename);
@@ -17,14 +18,18 @@ class Node
 
         virtual ~Node();
 
+        // output functions
         double z(std::vector<double> input);
         double output(std::vector<double> input);
+
+        //I/O functions
         void from_file(std::string filename);
         void read_byte_chunk(std::ifstream& file, std::streampos& co);
         void save_bin(std::string filename);
         void write_byte_chunk(std::ofstream& file, std::streampos& co);
         friend std::ostream& operator<< (std::ostream& os, const Node& node);
 
+        // members
         std::vector<double> w;
         double b;
 

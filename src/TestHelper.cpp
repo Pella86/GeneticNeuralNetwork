@@ -64,11 +64,14 @@ void test_genetic_algorithm(){
     int input_n = 1;
     int output_n = 4;
 
-    io_nn_type inputs;
-    io_nn_type outputs;
+    io_matrix inputs;
+    io_matrix outputs;
     int n_io_pairs = 8;
     for(int i = 0; i < n_io_pairs; ++i){
-        /*input definition*/
+        /*input definition
+            as input there is a number
+        */
+
         vector<double> input;
          // put the number as input
         for(int j = 0; j < input_n; ++ j){
@@ -76,8 +79,9 @@ void test_genetic_algorithm(){
         }
         inputs.push_back(input);
 
-
-        /*output definition*/
+        /*output definition
+            as output there's the binary representation of that number
+        */
         vector<double> output;
         int mask = 0b00000001;
 
@@ -116,6 +120,7 @@ void test_genetic_algorithm(){
 
 void create_example_files(){
 
+    // config file
     string config_example = "\
 # genetic algorithm configuration\n\npop_len = 20\nretain_n = 5\n\
 retain_chance = 0.1\nmut_chance = 0.5\ncross_chance = 0.5\n\
@@ -127,6 +132,7 @@ network_layers = 4 32 16 2\nrounds = 10\noutput_folder = ./results/\n";
         config_file.close();
     }
 
+    // inputs file
     string inputs_example = "\
 # input table\n\n\n0 0 0 1\n0 0 1 0\n0 1 0 0\n1 0 0 0\n";
 
@@ -136,6 +142,7 @@ network_layers = 4 32 16 2\nrounds = 10\noutput_folder = ./results/\n";
         inputs_file.close();
     }
 
+    // output file
     string outputs_example = "\
 # output table\n\n\n0 0\n0 1\n1 0\n1 1\n";
 
@@ -145,11 +152,11 @@ network_layers = 4 32 16 2\nrounds = 10\noutput_folder = ./results/\n";
         outputs_file.close();
     }
 
+    // create input binary file
     ofstream bin_inputs_file("./GA_bin_inputs.nni");
 
     size_t n_pairs = 4;
     size_t n_inputs = 4;
-
 
     streampos co = 512;
     if(bin_inputs_file.is_open()){
@@ -160,9 +167,11 @@ network_layers = 4 32 16 2\nrounds = 10\noutput_folder = ./results/\n";
         co += sizeof(size_t);
 
         bin_inputs_file.seekp(co);
+
         //second is m
         bin_inputs_file.write(reinterpret_cast<char*> (&n_inputs), sizeof(size_t));
         co += sizeof(size_t);
+        bin_inputs_file.seekp(co);
 
 
         for(size_t i = 0; i < n_pairs; ++i){
@@ -171,28 +180,31 @@ network_layers = 4 32 16 2\nrounds = 10\noutput_folder = ./results/\n";
                 double data = (i == j)? 1 : 0;
                 bin_inputs_file.write(reinterpret_cast<char*> (&data), sizeof(double));
                 co += sizeof(double);
+                bin_inputs_file.seekp(co);
             }
         }
         bin_inputs_file.close();
     }
 
+    // create binary output file
+    // mxn matrix
     ofstream bin_outputs_file("./GA_bin_outputs.nni");
 
     size_t n_outputs = 2;
 
-    co = 512;
+    co = 512; // 512 header
     if(bin_outputs_file.is_open()){
         bin_outputs_file.seekp(co);
 
-        //first is n
+        //first integer is n
         bin_outputs_file.write(reinterpret_cast<char*> (&n_pairs), sizeof(size_t));
         co += sizeof(size_t);
-
         bin_outputs_file.seekp(co);
+
         //second is m
         bin_outputs_file.write(reinterpret_cast<char*> (&n_outputs), sizeof(size_t));
         co += sizeof(size_t);
-
+        bin_outputs_file.seekp(co);
 
         for(size_t i = 0; i < n_pairs; ++i){
             int mask = 0b00000001;
@@ -200,10 +212,9 @@ network_layers = 4 32 16 2\nrounds = 10\noutput_folder = ./results/\n";
                 double data = ( (i&mask) > 0)? 1 : 0;
                 bin_outputs_file.write(reinterpret_cast<char*> (&data), sizeof(double));
                 co += sizeof(double);
+                bin_outputs_file.seekp(co);
             }
         }
         bin_outputs_file.close();
     }
-
-
 }

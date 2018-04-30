@@ -1,59 +1,111 @@
 #include "StringtoDouble.h"
+
+#include <cinttypes>
+
 #include "int_96.h"
 
 /*******************************************************************************
  Constants
 *******************************************************************************/
 
-#define DPOINT '.'
-#define DIGITS 18 //significant digits of the number (mantissa)
+constexpr char DPOINT = '.';
+constexpr uint8_t DIGITS = 18; //significant digits of the number (mantissa)
 
-#ifndef INT_MAX
-#define INT_MAX 2147483647
-#endif // INT_MAX
-
-#define DOUBLE_PLUS_ZERO          0x0000000000000000ULL
-#define DOUBLE_MINUS_ZERO         0x8000000000000000ULL
-#define DOUBLE_PLUS_INFINITY      0x7FF0000000000000ULL
-#define DOUBLE_MINUS_INFINITY     0xFFF0000000000000ULL
+constexpr unsigned long long DOUBLE_PLUS_ZERO       = 0x0000000000000000ULL;
+constexpr unsigned long long DOUBLE_MINUS_ZERO      = 0x8000000000000000ULL;
+constexpr unsigned long long DOUBLE_PLUS_INFINITY   = 0x7FF0000000000000ULL;
+constexpr unsigned long long DOUBLE_MINUS_INFINITY  = 0xFFF0000000000000ULL;
 
 /*******************************************************************************
  Helper functions
 *******************************************************************************/
 
 // 0x09 : 0x13 \t\n\r... 0x20= ' '
-inline bool is_space(const char& x){
+inline bool is_space(char x){
     return (x >= 0x09 && x <= 0x13) || x == 0x20;
 }
 
-inline bool is_digit(const char& x){
+inline bool is_digit(char x){
     return x >= '0' && x <= '9';
 }
 
-inline bool is_exp(const char& x){
+inline bool is_exp(char x){
     return (x == 'e') || (x == 'E');
 }
 
 // scrolls the pointer
-inline char GETC(std::string::iterator& s){ return *s++; }
+inline char GETC(std::string::const_iterator& s){ return *s++; }
 
 /*******************************************************************************
  prepNumber
+    helper class storing the x * 10 ^ (y) number
 *******************************************************************************/
 
-prepNumber::prepNumber() : negative(false), exponent(0), mantissa(0) {}
+class prepNumber{
+public:
+
+    prepNumber() : negative(false), exponent(0), mantissa(0) {}
+
+    bool negative; // negative flag for the negative
+    int32_t exponent; // store the exponent of the numnber v= 10^e * x  e (-327:308)
+    uint64_t mantissa; // x in the above form
+
+};
+
+/*******************************************************************************
+ conveerter
+    converts the number into the double
+*******************************************************************************/
+
+double converter(prepNumber pn);
+
 
 /*******************************************************************************
  Parser
+    parses the string into prepNumber
 *******************************************************************************/
+
+class Parser{
+public:
+    Parser();
+
+    prepNumber run(std::string const& init_string);
+
+    int get_machine_state();
+    int get_parser_state();
+
+    static int const PARSER_OK = 0;
+    static int const PARSER_PZERO = 1;
+    static int const PARSER_MZERO = 2;
+    static int const PARSER_PINF = 3;
+    static int const PARSER_MINF = 4;
+
+private:
+/*state machine states*/
+    static int const FSM_A = 0;
+    static int const FSM_B = 1;
+    static int const FSM_C = 2;
+    static int const FSM_D = 3;
+    static int const FSM_E = 4;
+    static int const FSM_F = 5;
+    static int const FSM_G = 6;
+    static int const FSM_H = 7;
+    static int const FSM_I = 8;
+    static int const FSM_STOP = 9;
+
+
+
+    int state;
+    int parser_state;
+};
 
 Parser::Parser(){}
 
 Parser::get_machine_state(){return state;}
 Parser::get_parser_state() {return parser_state;}
 
-prepNumber Parser::run(std::string init_string){
-    std::string::iterator s = init_string.begin();
+prepNumber Parser::run(std::string const& init_string){
+    std::string::const_iterator s = init_string.begin();
 
     parser_state = PARSER_OK; // reset the result
     state = FSM_A; // set the state to A to enter the cycle
@@ -114,7 +166,7 @@ prepNumber Parser::run(std::string init_string){
 
                 if(c == '0'){
                    c = GETC(s);
-                   if(pn.exponent > -INT_MAX) pn.exponent--;
+                   if(pn.exponent > - 2147483647) pn.exponent--;
                 }
                 else{
                     state = FSM_F;
@@ -131,7 +183,7 @@ prepNumber Parser::run(std::string init_string){
                         pn.mantissa += c - '0';
                         digx++;
                     }
-                    else if(pn.exponent < INT_MAX){
+                    else if(pn.exponent < 2147483647){
                         pn.exponent++;
                     }
 
@@ -228,7 +280,7 @@ public:
 
     void set(uint64_t n){u = n;}
 
-    double get(){return d;}
+    double const get(){return d;}
 
 private:
     union{
@@ -242,7 +294,7 @@ double converter(prepNumber pn){
 
     int bin_exp = 92;
     int_96 r;
-    int_96 s((uint64_t)pn.mantissa);
+    int_96 s(pn.mantissa);
 
     // multiply by 10 till significand get to the left most bit
     while(pn.exponent > 0){
@@ -284,7 +336,7 @@ double converter(prepNumber pn){
     HexDouble hd;
 
     //boundary checking
-    bin_exp += 1023; // addin bias
+    bin_exp += 1023; // add bias
 
     if(bin_exp > 2046){
         hd.set((pn.negative)? DOUBLE_MINUS_INFINITY : DOUBLE_PLUS_INFINITY);

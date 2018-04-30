@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include <map>
 #include <unistd.h> //getopt
 
 #include "GeneticAlgorithm.h"
@@ -23,119 +24,115 @@ The program can run also by giving the files separately with the options:\
     -c path/to/config/file.txt\n\
     -i path/to/inputs/file.txt\n\
     -o path/to/outputs/file.tx\n\
-The program runs a self generated test and saves self generated input and\
-outputs if the program is run with option:\n\
+The program runs a self generated test and saves self generated input, \
+outputs and a config file if the program is run with option:\n\
     -t\n\
 Any other option will call for this help (also available with the option -h).";
 
-vector<vector<double>> read_iofile_txt(string filename);
-vector<vector<double>> read_iofile_bin(string filename);
+
+// helper functions to read the files
+io_matrix read_iofile_txt(string filename);
+io_matrix read_iofile_bin(string filename);
 bool is_text_file(string filename);
 
 int main(int argc, char** argv)
 {
-    char c;
-    bool optd = false;
-    string darg;
-    bool opti = false;
-    string iarg;
-    bool opto = false;
-    string oarg;
-    bool optc = false;
-    string carg;
-    bool opth = false;
-    bool optt = false;
+    // available options + options with arguments
+    string const options = "htdioc";
+    string const options_with_args = "dioc";
 
-    while( (c = getopt(argc, argv, "htd:i:o:c:") ) != -1 ){
-        switch(c){
-            case 'd':
-                optd = true;
-                darg = optarg;
-            break;
-            case 'i':
-                opti = true;
-                iarg = optarg;
-            break;
-            case 'o':
-                opto = true;
-                oarg = optarg;
-            break;
-            case 'c':
-                optc = true;
-                carg = optarg;
-            break;
-            case 't':
-                optt = true;
-            break;
-            case 'h':
-            default:
-                opth = true;
-            break;
+    map<char, bool> opt_found;
+    map<char, string> opt_argument;
 
+    // initialize the maps
+    for(string::const_iterator c = options.begin(); c != options.end(); ++c){
+        opt_found[*c] = false;
+        if(options_with_args.find(*c) != string::npos){
+            opt_argument[*c] = "";
         }
     }
 
-    if( optd || (optc && opti && opto) || optt){
+    // getopt cycle
+    char c;
+    while((c = getopt(argc, argv, "htd:i:o:c:")) != -1){
+        opt_found[c] = true;
+        if(options_with_args.find(c) != string::npos){
+            opt_argument[c] = optarg;
+        }
+    }
+
+    // check if the user gave an option, if is not the case, show help
+    if( opt_found['d'] || (opt_found['c'] && opt_found['i'] && opt_found['o']) || opt_found['t']){
         // continue
     }
     else{
-        opth = true;
+        opt_found['h'] = true;
     }
 
-    vector<vector<double>> inputs;
-    vector<vector<double>> outputs;
+    // initialize genetic algorithm elements
+    io_matrix inputs;
+    io_matrix outputs;
 
     GeneticAlgorithm ga;
 
-    if(optd){
+    if(opt_found['d']){
         cout << "Directory option" << endl;
-        cout << darg << endl;
+        cout << opt_argument['d'] << endl;
 
-        string darg_s(darg);
+        string initial_folder(opt_argument['d']);
 
-        string filename_inputs = darg_s + "GA_inputs.txt";
+        // search for the inputs in text format or binary format
+        string filename_inputs = initial_folder + "GA_inputs.txt";
         ifstream file_inputs(filename_inputs);
         if(file_inputs.good()){
            inputs = read_iofile_txt(filename_inputs);
         }
         else{
-            filename_inputs = darg_s + "GA_inputs.nni";
+            filename_inputs = initial_folder + "GA_inputs.nni";
             inputs = read_iofile_bin(filename_inputs);
         }
 
-        string filename_outputs = darg_s + "GA_outputs.txt";
+        // search for the outputs either in text or binary format
+        string filename_outputs = initial_folder + "GA_outputs.txt";
         ifstream file_outputs(filename_outputs);
         if(file_outputs.good()){
-           inputs = read_iofile_txt(filename_outputs);
+            outputs = read_iofile_txt(filename_outputs);
         }
         else{
-            filename_outputs = darg_s + "GA_outputs.nni";
+            filename_outputs = initial_folder + "GA_outputs.nni";
             outputs = read_iofile_bin(filename_outputs);
         }
 
-        ga.read_from_file(darg_s + "GA_config.txt");
+        // parse the configuration file
+        ga.read_from_file(initial_folder + "GA_config.txt");
     }
 
-    if(opti && opto && optc){
+    bool is_file_inputs = opt_found['i'] && opt_found['o'] && opt_found['c'];
+
+    if(is_file_inputs){
         cout << "File specification option" << endl;
-        cout << "inputs file: " << iarg << endl;
-        cout << "outputs file: " << oarg << endl;
-        cout << "config file: " << carg << endl;
+        cout << "inputs file: " << opt_argument['i'] << endl;
+        cout << "outputs file: " << opt_argument['o'] << endl;
+        cout << "config file: " << opt_argument['c'] << endl;
 
         bool read_txt;
 
-        string iarg_s(iarg);
+        // read the inputs file, either text (.txt) or binary (anything else
+        string iarg_s(opt_argument['i']);
         read_txt = is_text_file(iarg_s);
         inputs = (read_txt)? read_iofile_txt(iarg_s) : read_iofile_bin(iarg_s);
 
-        string oarg_s(oarg);
+        string oarg_s(opt_argument['o']);
         read_txt = is_text_file(oarg_s);
         outputs =(read_txt)? read_iofile_txt(oarg_s) : read_iofile_bin(oarg_s);
 
-        ga.read_from_file((string)carg);
+        // read the configuration
+        ga.read_from_file((string)opt_argument['c']);
     }
 
-   if(ga.ga_initialized && (optd || (optc && opti && opto))){
+
+    // if ga initialized and only one of the two options (dir init xor file init)
+    if(ga.ga_initialized && (opt_found['d'] != is_file_inputs)){
 
         if(inputs.size() > 0 && outputs.size() > 0 && inputs.size() == outputs.size()){
             ga.run(inputs, outputs);
@@ -145,11 +142,18 @@ int main(int argc, char** argv)
         }
 
     }
-    else if(!ga.ga_initialized && (optd || (optc && opti && opto))){
+    else if(!ga.ga_initialized && (opt_found['d'] != is_file_inputs)){
         cout << "Genetic Algorithm not initialized correctly" << endl;
     }
+    else if(opt_found['t']){
+        // continue
+    }
+    else{
+        opt_found['h'] = true;
+    }
 
-    if(optt){
+    // test option chosen
+    if(opt_found['t']){
         cout << "Test run" << endl;
 
         cout << "Testing node" << endl;
@@ -168,14 +172,15 @@ int main(int argc, char** argv)
         create_example_files();
     }
 
-    if(opth){
-
+    // help option triggered or chosen
+    if(opt_found['h']){
         cout << help_message << endl;
     }
 
     return 0;
 }
 
+// controls the extention in a path and returns true if is txt
 bool is_text_file(string filename){
     vector<string> filenameext;
 
@@ -189,10 +194,16 @@ bool is_text_file(string filename){
     return false;
 }
 
-vector<vector<double>> read_iofile_txt(string filename){
+// reading the text file
+io_matrix read_iofile_txt(string filename){
     ifstream file(filename, ios::in);
 
-    vector<vector<double>> inputs;
+    // File format:
+    // #: comment
+    // empty lines ignored
+    // then space separated values
+
+    io_matrix inputs;
 
     string line;
 
@@ -207,8 +218,10 @@ vector<vector<double>> read_iofile_txt(string filename){
 
             vector<double> input_line;
 
+            // split the line at spaces
             vector<string> chunks = str_split(line, ' ');
 
+            // keep only the lines that have significant numbers
             for(auto s : chunks){
                 if(s.size() > 0){
                     input_line.push_back(stod(s));
@@ -226,13 +239,19 @@ vector<vector<double>> read_iofile_txt(string filename){
     return inputs;
 }
 
-vector<vector<double>> read_iofile_bin(string filename){
-
+// read the custom bianry format
+io_matrix read_iofile_bin(string filename){
     cout << "Reading binary file..." << endl;
     ifstream file(filename, ios::in | ios::binary);
-    streampos co = 512;
 
-    vector<vector<double>> io_pairs;
+    // File format
+    // 512 bytes header
+    // size_t m -> row number (io pair number)
+    // size_t n -> column number (length of in/output vector)
+
+    streampos co = 512; // skip header
+
+    io_matrix io_pairs;
 
     if(file.is_open()){
         file.seekg(co);
@@ -240,28 +259,28 @@ vector<vector<double>> read_iofile_bin(string filename){
         size_t n_pairs;
         file.read(reinterpret_cast<char*> (&n_pairs), sizeof(size_t));
         co += sizeof(size_t);
+        file.seekg(co);
 
         size_t n_io;
         file.read(reinterpret_cast<char*> (&n_io), sizeof(size_t));
         co += sizeof(size_t);
+        file.seekg(co);
 
-        cout << "Matrix: " << n_pairs << "x" << n_io << endl;
+        cout << "Io matrix sizes: " << n_pairs << "x" << n_io << endl;
 
+        // read matrix values
         for(size_t i = 0; i < n_pairs; ++i){
             vector<double> line;
             for(size_t j = 0; j < n_io; ++j){
                 double data;
                 file.read(reinterpret_cast<char*> (&data), sizeof(double));
                 line.push_back(data);
-
+                co += sizeof(double);
+                file.seekg(co);
             }
             io_pairs.push_back(line);
         }
-
-
         file.close();
     }
-
     return io_pairs;
-
 }

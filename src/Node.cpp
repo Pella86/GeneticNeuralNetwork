@@ -4,11 +4,12 @@
 
 using namespace std;
 
-/* Sigmoid function
-*   converts the input in a 0 to 1 result
-*   the separation between negative z is to avoid exp will have too large numbers
-*   todo: insert a math exception to handle overflows
-*/
+/*******************************************************************************
+ Sigmoid function
+   converts the input in a 0 to 1 result
+   the separation between negative z is to avoid exp will have too large numbers
+   todo: insert a math exception to handle overflows
+********************************************************************************/
 double sigmoid(double z){
     if(z < 0){
         double s = 1 - 1 / ( 1 + exp(z));
@@ -20,9 +21,12 @@ double sigmoid(double z){
     }
 }
 
-/*Dot product fuction
-*   between two double vectors
-*/
+/*******************************************************************************
+ Dot product fuction
+   between two double vectors
+*******************************************************************************/
+
+
 double dot(vector<double> l1, vector<double> l2){
     double d = 0;
 
@@ -32,13 +36,14 @@ double dot(vector<double> l1, vector<double> l2){
     return d;
 }
 
-/*Class Node
-*   The class manages the node
-    can be initialized by giving the weights and bias
-    default initialization
-    random initialization
-    or read directly from a file
-*/
+/*******************************************************************************
+Class Node
+    The class manages the node
+    can be initialized by giving the weights and bias or
+    default initialization or
+    random initialization or
+    or read directly from a file.
+*******************************************************************************/
 
 Node::Node()
 {
@@ -59,11 +64,13 @@ Node::Node(string filename){
     from_file(filename);
 }
 
-
-// randomly initialize the node
-// it initializes with n_weights
-// needs a random number generator
-// by default is a normal distribution with mean mu = 0.0 and sigma = 1.0
+/*******************************************************************************
+ Node(n_weights, rng, mu, sigma)
+   randomly initialize the node
+   it initializes with n_weights
+   needs a random number generator
+   by default is a normal distribution with mean mu = 0.0 and sigma = 1.0
+*******************************************************************************/
 Node::Node(size_t n_weights, default_random_engine& rng, double mu, double sigma){
     normal_distribution<double> rand_n(mu, sigma);
 
@@ -102,23 +109,19 @@ void Node::read_byte_chunk(ifstream& file, streampos& co){
 
     // co is the cumulative offset, the cumulative offset will be moved
     // at the end of the byte chunk that correspond to the node read
-    //streampos init_co = co;
+    // streampos init_co = co;
 
     // set cumulative offset to the beginning of the node chunk
     file.seekg(co);
 
     // read the bias
     file.read(reinterpret_cast<char*>(&b), sizeof(double));
-    //cout << "Node: read b: " << b << endl;
-
     co += sizeof(double);
     file.seekg(co);
 
     // read how many weights
     int n_weights = 0;
     file.read(reinterpret_cast<char*>(&n_weights), sizeof(int));
-    //cout << "Node: read n of weights:" << n_weights << endl;
-
     co += sizeof(int);
 
     // read as many doubles from the file as there are nodes
@@ -130,10 +133,7 @@ void Node::read_byte_chunk(ifstream& file, streampos& co){
         w.push_back(weight);
         co += sizeof(double);
     }
-
-    //cout << "total bytes read: " << co - init_co << endl;
 }
-
 
 // saves the file in a binary format
 void Node::save_bin(string filename){
@@ -144,8 +144,6 @@ void Node::save_bin(string filename){
         file.close();
     }
 }
-
-
 
 // function that writes in the file the byte version of this node
 void Node::write_byte_chunk(ofstream& file, streampos& co){

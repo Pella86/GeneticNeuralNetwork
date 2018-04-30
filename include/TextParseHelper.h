@@ -6,7 +6,7 @@
 #include <sstream>
 #include <iostream>
 
-
+// Transform to string any value
 template<class T>
 std::string to_string(T value){
     std::stringstream ss;
@@ -14,10 +14,11 @@ std::string to_string(T value){
     return ss.str();
 }
 
+// return any integers ??? refactor.
 template<class T>
 T mystoi(std::string const& s){
 
-    int myi = 0;
+    T myi = 0;
     int mag = 1;
     bool invert = false;
 
@@ -50,10 +51,13 @@ T mystoi(std::string const& s){
     return myi;
 }
 
+// produces a binary representation of the number x
 std::string int2bin(int x);
 
+// splits in substrings the string s
 std::vector<std::string> str_split(std::string const& s, char const& delim);
 
+// eliminates preceeding or traling spaces
 std::string strip(std::string const& s);
 
 #endif // TEXTPARSEHELPER_H
